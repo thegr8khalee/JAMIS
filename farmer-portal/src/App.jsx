@@ -21,7 +21,8 @@ import {
   X,
   Camera,
   Sparkles,
-  Loader2
+  Loader2,
+  Brain
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -396,6 +397,13 @@ const MobileNav = ({ activeTab, setActiveTab }) => (
       </button>
     </div>
     <button 
+      onClick={() => setActiveTab('insights')}
+      className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${activeTab === 'insights' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-slate-600'}`}
+    >
+      <Brain className="w-5 h-5 sm:w-6 sm:h-6" />
+      <span className="text-[10px] font-medium">AI Insights</span>
+    </button>
+    <button 
       onClick={() => setActiveTab('tasks')}
       className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${activeTab === 'tasks' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-slate-600'}`}
     >
@@ -416,7 +424,7 @@ const DesktopSidebar = ({ activeTab, setActiveTab, user }) => (
   <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-slate-200 h-screen sticky top-0">
     {/* Logo */}
     <div className="p-6 border-b border-slate-100">
-      <h1 className="font-bold text-slate-900 text-2xl tracking-tight">JAMIS <span className="text-emerald-600">Farmer</span></h1>
+      <h1 className="font-bold text-slate-900 text-2xl tracking-tight">JAMIS</h1>
       <span className="text-xs text-slate-400 font-medium tracking-wide">by Romana Group</span>
     </div>
     
@@ -435,6 +443,13 @@ const DesktopSidebar = ({ activeTab, setActiveTab, user }) => (
       >
         <Sprout className="w-5 h-5" />
         <span className="font-medium">My Farm</span>
+      </button>
+      <button 
+        onClick={() => setActiveTab('insights')}
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${activeTab === 'insights' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}
+      >
+        <Brain className="w-5 h-5" />
+        <span className="font-medium">AI Insights</span>
       </button>
       <button 
         onClick={() => setActiveTab('id')}
@@ -481,7 +496,7 @@ const DesktopSidebar = ({ activeTab, setActiveTab, user }) => (
 const Header = ({ user }) => (
   <header className="lg:hidden fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md z-40 px-4 h-16 flex items-center justify-between border-b border-slate-100">
     <div className="flex flex-col justify-center">
-      <h1 className="font-bold text-slate-900 text-lg sm:text-xl tracking-tight leading-none">JAMIS <span className="text-emerald-600">Farmer</span></h1>
+      <h1 className="font-bold text-slate-900 text-lg sm:text-xl tracking-tight leading-none">JAMIS</h1>
       <span className="text-[10px] text-slate-400 font-medium tracking-wide leading-none mt-1">by Romana Group</span>
     </div>
     <button className="relative p-2 text-slate-500 hover:text-emerald-600 transition-colors rounded-full hover:bg-slate-100">
@@ -615,6 +630,107 @@ const DigitalID = ({ user }) => (
         </div>
     </div>
   </div>
+);
+
+const AiInsights = ({ user }) => (
+    <div className="px-3 sm:px-4 lg:px-8 pt-3 sm:pt-4 lg:pt-6 pb-24 lg:pb-8 space-y-4 sm:space-y-6">
+        <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900">AI Farm Insights</h2>
+        
+        {/* Alerts */}
+        <div className="grid gap-4 lg:grid-cols-2">
+            <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100 relative overflow-hidden">
+                <div className="flex gap-4 relative z-10">
+                   <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                       <Sun className="w-5 h-5 text-amber-600" />
+                   </div>
+                   <div>
+                       <h3 className="font-bold text-amber-900 mb-1">Heat Stress Warning</h3>
+                       <p className="text-sm text-amber-700 leading-relaxed">High temperatures predicted for the next 3 days. Consider increasing irrigation frequency for your {user?.crop || 'crops'}.</p>
+                   </div>
+                </div>
+            </div>
+            
+            <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 relative overflow-hidden">
+                <div className="flex gap-4 relative z-10">
+                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                       <CloudRain className="w-5 h-5 text-blue-600" />
+                   </div>
+                   <div>
+                       <h3 className="font-bold text-blue-900 mb-1">Irrigation Optimization</h3>
+                       <p className="text-sm text-blue-700 leading-relaxed">Based on soil data, reducing water usage by 15% next week will not affect yield and can save costs.</p>
+                   </div>
+                </div>
+            </div>
+        </div>
+
+        {/* Crop Health Analysis */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-slate-50 flex justify-between items-center">
+                <h3 className="font-bold text-slate-900">Crop Health Analysis</h3>
+                <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">Healthy</span>
+            </div>
+            <div className="p-5">
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                       <Leaf className="w-8 h-8 text-emerald-500" />
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-slate-800 text-lg">Vigor Index (NDVI)</h4>
+                        <p className="text-slate-500 text-sm">Satellite analysis from yesterday</p>
+                    </div>
+                    <div className="ml-auto text-2xl font-bold text-emerald-600">0.85</div>
+                </div>
+                
+                <div className="space-y-4">
+                    <div>
+                        <div className="flex justify-between text-sm mb-1">
+                            <span className="text-slate-600">Nitrogen Levels</span>
+                            <span className="font-medium text-slate-900">Optimal</span>
+                        </div>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500 w-[85%] rounded-full" />
+                        </div>
+                    </div>
+                    <div>
+                        <div className="flex justify-between text-sm mb-1">
+                            <span className="text-slate-600">Moisture Content</span>
+                            <span className="font-medium text-slate-900">Good</span>
+                        </div>
+                         <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 w-[70%] rounded-full" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div className="bg-slate-50 p-4 flex gap-3">
+                 <Bot className="w-5 h-5 text-emerald-600 shrink-0" />
+                 <p className="text-xs text-slate-600">
+                     <strong>AI Recommendation:</strong> Your crop development is on track. Applying the second round of fertilizer in 5 days is recommended for maximum yield.
+                 </p>
+             </div>
+        </div>
+
+        {/* Market Prediction */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <h3 className="font-bold text-slate-900 mb-4">Market Price Forecast</h3>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                     <p className="text-xs text-slate-500 mb-1">Current</p>
+                     <p className="font-bold text-slate-900">₦420k</p>
+                 </div>
+                 <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 relative">
+                     <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[9px] px-2 py-0.5 rounded-full">Likely</div>
+                     <p className="text-xs text-emerald-700 mb-1">Next Week</p>
+                     <p className="font-bold text-emerald-900">₦435k</p>
+                 </div>
+                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                     <p className="text-xs text-slate-500 mb-1">Next Month</p>
+                     <p className="font-bold text-slate-900">₦410k</p>
+                 </div>
+            </div>
+             <p className="text-xs text-slate-400 mt-4 text-center">Prediction confidence: 85% based on seasonal trends and demand.</p>
+        </div>
+    </div>
 );
 
 const HomeTab = ({ user }) => (
@@ -784,6 +900,7 @@ function App() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                 >
+                    {activeTab === 'insights' && <AiInsights user={userProfile} />}
                     {activeTab === 'home' && <HomeTab user={userProfile} />}
                     {activeTab === 'id' && <DigitalID user={userProfile} />}
                     {activeTab === 'farm' && <FarmTab user={userProfile} />}
@@ -860,13 +977,22 @@ function App() {
                             </button>
                             
                             <div className="text-center pb-8 pt-4">
-                                <p className="text-xs text-slate-400">JAMIS Farmer App v1.0.2</p>
+                                <p className="text-xs text-slate-400">JAMIS App v1.0.2</p>
                                 <p className="text-[10px] text-slate-300 mt-1">Jigawa State Government</p>
                             </div>
                         </div>
                     )}
                 </motion.div>
             </AnimatePresence>
+            
+            {/* Footer */}
+            <div className="mt-8 py-6 border-t border-slate-200/60 flex flex-col items-center justify-center text-center opacity-80 hover:opacity-100 transition-opacity">
+               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Romana Group</h4>
+               <p className="text-[10px] text-slate-400 font-medium tracking-wide">
+                 Presented by: <span className="text-slate-600 font-semibold">Ibrahim Babangida kani</span> • <span className="font-mono text-xs">+234 803 680 2214</span>
+               </p>
+            </div>
+
           </div>
         </main>
       </div>
@@ -879,9 +1005,10 @@ function App() {
          whileHover={{ scale: 1.05 }}
          whileTap={{ scale: 0.95 }}
          onClick={() => setIsAiOpen(true)}
-         className="fixed bottom-24 right-4 sm:right-6 lg:bottom-8 lg:right-8 z-40 w-12 h-12 sm:w-14 sm:h-14 bg-emerald-600 rounded-full shadow-xl shadow-emerald-500/40 flex items-center justify-center border-4 border-white hover:bg-emerald-700 transition-colors"
+         className="fixed bottom-24 right-4 sm:right-6 lg:bottom-8 lg:right-8 z-40 px-5 h-12 sm:h-14 bg-emerald-600 rounded-full shadow-xl shadow-emerald-500/40 flex items-center gap-2 border-4 border-white hover:bg-emerald-700 transition-colors"
       >
-          <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <Sparkles className="w-5 h-5 text-white" />
+          <span className="font-bold text-white text-sm sm:text-base">JAMIS AI</span>
           <span className="absolute -top-1 -right-1 flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>

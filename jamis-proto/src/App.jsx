@@ -35,13 +35,19 @@ import {
   Stethoscope,
   Footprints,
   Activity,
-  Trees
+  Trees,
+  Truck,
+  Calendar,
+  AlertOctagon,
+  Warehouse,
+  TrendingDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer,
   BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
+import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip as LeafletTooltip } from 'react-leaflet';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -71,15 +77,34 @@ const marketData = [
 ];
 
 const anomalies = [
-  { id: 1, type: 'CRITICAL', msg: 'Multiple identity reg: ID #9928 (Hadejia)', time: '2m ago' },
-  { id: 2, type: 'WARN', msg: 'Fertilizer stock variance: Dutse Depot', time: '15m ago' },
-  { id: 3, type: 'INFO', msg: 'Soil moisture dip: Zone B (Kazaure)', time: '45m ago' },
-  { id: 4, type: 'CRITICAL', msg: 'Illegal logging detected: Sector 4', time: '1h ago' },
-  { id: 5, type: 'WARN', msg: 'Price surge: Gujungu Market (Rice)', time: '3h ago' },
+  { id: 1, type: 'ATTENTION', msg: 'AI Insight: Multiple identity registration needs review - ID #9928 (Hadejia)', time: '2m ago' },
+  { id: 2, type: 'REVIEW', msg: 'Early Signal: Fertilizer stock variance at Dutse Depot', time: '15m ago' },
+  { id: 3, type: 'INFO', msg: 'AI Insight: Soil moisture change in Zone B (Kazaure)', time: '45m ago' },
+  { id: 4, type: 'ATTENTION', msg: 'Needs Attention: Possible unauthorized activity in Sector 4', time: '1h ago' },
+  { id: 5, type: 'REVIEW', msg: 'Early Signal: Price change at Gujungu Market (Rice)', time: '3h ago' },
+];
+
+const DISTRIBUTION_LEDGER = [
+    { id: 'TRK-2024-001', lga: 'Hadejia', item: 'NPK Fertilizer (Bags)', dispatched: 5000, received: 4850, status: 'Leakage', variance: '-150' },
+    { id: 'TRK-2024-002', lga: 'Dutse', item: 'Improved Rice Seeds', dispatched: 2000, received: 2000, status: 'Verified', variance: '0' },
+    { id: 'TRK-2024-003', lga: 'Kazaure', item: 'FMD Vaccines (Vials)', dispatched: 10000, received: 10000, status: 'Verified', variance: '0' },
+    { id: 'TRK-2024-004', lga: 'Gumel', item: 'Solar Pumps', dispatched: 50, received: 48, status: 'Leakage', variance: '-2' },
+];
+
+const SEASONAL_INTELLIGENCE = [
+    { activity: 'Sorghum Planting', window: 'May 15 - Jun 10', confidence: '94%', condition: 'Soil Moisture Optimal', status: 'Active' },
+    { activity: 'Cattle Grazing (Zone C)', window: 'Nov 01 - Feb 28', confidence: '88%', condition: 'Biomass Adequate', status: 'Early Warning' },
+    { activity: 'Dry Season Wheat', window: 'Nov 15 - Dec 20', confidence: '91%', condition: 'Temperature Favorable', status: 'Upcoming' },
+];
+
+const WAREHOUSE_STOCK = [
+    { name: 'Dutse Central', capacity: '10000 MT', utilization: 85, items: [{ name: 'Fertilizer', count: '4500 Bags' }, { name: 'Seeds', count: '2100 Bags' }] },
+    { name: 'Hadejia North', capacity: '8000 MT', utilization: 42, items: [{ name: 'Grains', count: '1200 MT' }, { name: 'Pesticides', count: '500 L' }] },
+    { name: 'Birnin Kudu', capacity: '12000 MT', utilization: 91, items: [{ name: 'Fertilizer', count: '8000 Bags' }, { name: 'Tractors', count: '12 Units' }] },
 ];
 
 const messages = [
-  { id: 1, sender: 'bot', text: 'Sannu! I am JAMIS AI. How can I help with your harvest today?' },
+  { id: 1, sender: 'bot', text: 'Good day. I am JAMIS AI. I can assist with policy analysis, agricultural data queries, and report generation. How may I be of service?' },
 ];
 
 const INITIAL_FARMERS = [
@@ -104,10 +129,10 @@ const JIGAWA_LGAS = [
 // --- Mock Livestock Data ---
 const LIVESTOCK_REGISTRY = [
     { id: 'LS-292', type: 'Cattle', breed: 'Gudali', owner: 'Musa Ibrahim', lga: 'Hadejia', health: 'Healthy', lastVaccine: 'FMD - Jan 10' },
-    { id: 'LS-293', type: 'Sheep', breed: 'Balami', owner: 'Aliyu Sani', lga: 'Dutse', health: 'Review', lastVaccine: 'PPR - Pending' },
+    { id: 'LS-293', type: 'Sheep', breed: 'Balami', owner: 'Aliyu Sani', lga: 'Dutse', health: 'Needs Review', lastVaccine: 'PPR - Pending' },
     { id: 'LS-294', type: 'Camel', breed: 'Ja', owner: 'Farouk Umar', lga: 'Kazaure', health: 'Healthy', lastVaccine: 'Anthrax - Dec 20' },
-    { id: 'LS-295', type: 'Cattle', breed: 'White Fulani', owner: 'Yusuf Bala', lga: 'Hadejia', health: 'Critical', lastVaccine: 'None' },
-    { id: 'LS-296', type: 'Goat', breed: 'Red Sokoto', owner: 'Amina Lawal', lga: 'Ringim', health: 'Healthy', lastVaccine: 'PPR - Jan 05' },
+    { id: 'LS-295', type: 'Cattle', breed: 'White Fulani', owner: 'Yusuf Bala', lga: 'Hadejia', health: 'Urgent', lastVaccine: 'None' },
+    { id: 'LS-296', type: 'Goat', breed: 'Red Sokoto', owner: 'Amina Lawal', lga: 'Ringim', health: 'Observed', lastVaccine: 'PPR - Jan 05' },
 ];
 
 const VACCINE_DATA = [
@@ -119,9 +144,9 @@ const VACCINE_DATA = [
 ];
 
 const PASTURE_ZONES = [
-    { name: 'Northern Grazing Reserve', status: 'Optimal', biomass: '4.2 ton/ha', alerts: 0 },
-    { name: 'Hadejia Wetlands', status: 'Warning', biomass: '1.8 ton/ha', alerts: 2 },
-    { name: 'Dutse Range', status: 'Critical', biomass: '0.9 ton/ha', alerts: 5 },
+    { name: 'Northern Grazing Planning Zone', status: 'Optimal', biomass: '4.2 ton/ha', alerts: 0 },
+    { name: 'Hadejia Wetlands Planning Zone', status: 'Needs Review', biomass: '1.8 ton/ha', alerts: 2 },
+    { name: 'Dutse Range Planning Zone', status: 'Needs Visit', biomass: '0.9 ton/ha', alerts: 5 },
 ];
 
 // --- Components ---
@@ -170,102 +195,81 @@ const StatCard = ({ label, value, trend, trendUp, icon: Icon, color }) => (
 );
 
 const WarRoomMap = ({ activeLayer }) => {
+  const center = [12.1800, 9.5300]; // Jigawa center approx
+
+  // Mock data points
+  const zones = [
+    { id: 'A', lat: 12.35, lng: 9.30, vegetation: 98, pasture: 'High', flood: 'Safe', pollution: 'Low' },
+    { id: 'B', lat: 11.95, lng: 9.90, vegetation: 85, pasture: 'Mod', flood: 'Risk', pollution: 'Med' },
+    { id: 'C', lat: 12.45, lng: 9.80, vegetation: 92, pasture: 'Low', flood: 'Safe', pollution: 'High' },
+    { id: 'D', lat: 12.10, lng: 9.20, vegetation: 75, pasture: 'High', flood: 'Risk', pollution: 'Low' },
+  ];
+
+  const getColor = (layer) => {
+    switch(layer) {
+      case 'vegetation': return '#10b981'; // emerald-500
+      case 'pasture': return '#eab308'; // yellow-500
+      case 'flood': return '#0ea5e9'; // sky-500
+      case 'pollution': return '#f43f5e'; // rose-500
+      default: return '#cbd5e1';
+    }
+  };
+
   return (
-    <div className="relative w-full h-[500px] bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 group">
-      {/* Google Maps Satellite Base */}
-      <div className="absolute inset-0">
-        <iframe 
-            width="100%" 
-            height="100%" 
-            frameBorder="0" 
-            scrolling="no" 
-            marginHeight="0" 
-            marginWidth="0" 
-            src="https://maps.google.com/maps?q=Jigawa%20State%2C%20Nigeria&t=k&z=9&ie=UTF8&iwloc=&output=embed"
-            className="w-full h-full opacity-90 saturate-150 contrast-125 grayscale-[20%]"
-            title="Jigawa Satellite Map"
-        ></iframe>
-        
-        {/* Layer Overlays */}
-        {activeLayer === 'vegetation' && (
-            <div className="absolute inset-0 bg-emerald-500/20 mix-blend-overlay" />
-        )}
-      {activeLayer === 'pasture' && (
-          <div className="absolute inset-0 bg-yellow-500/20 mix-blend-overlay" />
-      )}
-      {activeLayer === 'flood' && (
-          <div className="absolute inset-0 bg-sky-500/20 mix-blend-overlay" />
-      )}
-      {activeLayer === 'pollution' && (
-          <div className="absolute inset-0 bg-rose-500/20 mix-blend-overlay" />
-      )}
-      
-      {/* Grid Overlay for Tech Feel */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:100px_100px]" />
-    </div>
-    
-    {/* Dynamic Data Hotspots */}
-    <div className="absolute inset-0">
-        <motion.div 
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="absolute top-1/3 left-1/4"
-        >
-           <div className={cn("w-4 h-4 rounded-full animate-ping absolute opacity-75", 
-              activeLayer === 'vegetation' ? "bg-emerald-500" : activeLayer === 'pasture' ? "bg-yellow-500" : activeLayer === 'flood' ? "bg-sky-500" : "bg-rose-500"
-           )} />
-           <div className={cn("w-3 h-3 rounded-full relative z-10 border-2 border-white shadow-sm", 
-              activeLayer === 'vegetation' ? "bg-emerald-500" : activeLayer === 'pasture' ? "bg-yellow-500" : activeLayer === 'flood' ? "bg-sky-500" : "bg-rose-500"
-           )} />
-           <div className="absolute left-6 top-0 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold shadow-sm whitespace-nowrap">
-               Zone A: {activeLayer === 'vegetation' ? '98% Yield' : activeLayer === 'pasture' ? 'High Biomass' : activeLayer === 'flood' ? 'Safe' : 'Normal'}
+    <div className="relative w-full h-[500px] bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 group z-0">
+       <MapContainer 
+          center={center} 
+          zoom={9} 
+          style={{ height: '100%', width: '100%', background: '#0f172a' }}
+          zoomControl={false}
+          className="z-0"
+       >
+          <TileLayer
+            attribution='&copy; Esri'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          />
+          {/* Dark Overlay */}
+          <div className="leaflet-bottom leaflet-left" style={{pointerEvents: 'none', width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.2)', zIndex: 400}}></div>
+          
+          {zones.map(zone => (
+            <CircleMarker 
+              key={zone.id}
+              center={[zone.lat, zone.lng]}
+              radius={20}
+              pathOptions={{ 
+                color: getColor(activeLayer), 
+                fillColor: getColor(activeLayer), 
+                fillOpacity: 0.4,
+                weight: 2
+              }}
+            >
+              <LeafletTooltip direction="top" offset={[0, -20]} opacity={1} permanent>
+                 <div className="bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold shadow-sm whitespace-nowrap text-slate-800 border border-slate-200">
+                    Planning Zone {zone.id}: {activeLayer === 'vegetation' ? `${zone.vegetation}% Yield` : activeLayer === 'pasture' ? zone.pasture : activeLayer === 'flood' ? zone.flood : zone.pollution}
+                 </div>
+              </LeafletTooltip>
+            </CircleMarker>
+          ))}
+       </MapContainer>
+
+       {/* Tech Grid Overlay */}
+       <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:100px_100px] z-[500]" />
+       
+       {/* Active Layer Indicator */}
+       <div className="absolute top-4 right-4 pointer-events-none z-[500]">
+           <div className={cn("px-3 py-1 rounded-full text-xs font-bold shadow-sm border uppercase backdrop-blur-md flex items-center gap-2", 
+              activeLayer === 'vegetation' ? "bg-emerald-500/20 text-emerald-100 border-emerald-500/50" : 
+              activeLayer === 'pasture' ? "bg-yellow-500/20 text-yellow-100 border-yellow-500/50" : 
+              activeLayer === 'flood' ? "bg-sky-500/20 text-sky-100 border-sky-500/50" : 
+              "bg-rose-500/20 text-rose-100 border-rose-500/50"
+           )}>
+              <div className={cn("w-2 h-2 rounded-full animate-pulse", 
+                 activeLayer === 'vegetation' ? "bg-emerald-400" : activeLayer === 'pasture' ? "bg-yellow-400" : activeLayer === 'flood' ? "bg-sky-400" : "bg-rose-400"
+              )}/>
+              LIVE: {activeLayer}
            </div>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="absolute bottom-1/3 right-1/3"
-        >
-           <div className={cn("w-6 h-6 rounded-full animate-ping absolute opacity-75 duration-[3000ms]", 
-              activeLayer === 'vegetation' ? "bg-emerald-500" : activeLayer === 'pasture' ? "bg-yellow-500" : activeLayer === 'flood' ? "bg-sky-500" : "bg-rose-500"
-           )} />
-           <div className={cn("w-4 h-4 rounded-full relative z-10 border-2 border-white shadow-sm", 
-              activeLayer === 'vegetation' ? "bg-emerald-500" : activeLayer === 'pasture' ? "bg-yellow-500" : activeLayer === 'flood' ? "bg-sky-500" : "bg-rose-500"
-           )} />
-            <div className="absolute left-6 top-0 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold shadow-sm whitespace-nowrap">
-               Zone B: {activeLayer === 'vegetation' ? 'Harvest Ready' : activeLayer === 'pasture' ? 'Moderate Grazing' : activeLayer === 'flood' ? 'Water Levels High' : 'Clear'}
-           </div>
-        </motion.div>
-
-         <motion.div 
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="absolute top-1/2 right-12"
-        >
-           <div className={cn("w-3 h-3 rounded-full animate-ping absolute opacity-75 duration-[1500ms]", 
-              activeLayer === 'vegetation' ? "bg-emerald-500" : activeLayer === 'pasture' ? "bg-yellow-500" : activeLayer === 'flood' ? "bg-sky-500" : "bg-rose-500"
-           )} />
-           <div className={cn("w-2 h-2 rounded-full relative z-10 border-2 border-white shadow-sm", 
-              activeLayer === 'vegetation' ? "bg-emerald-500" : activeLayer === 'pasture' ? "bg-yellow-500" : activeLayer === 'flood' ? "bg-sky-500" : "bg-rose-500"
-           )} />
-        </motion.div>
+       </div>
     </div>
-
-    {/* Map Overlay UI */}
-    <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-       {['Vegetation', 'Pasture', 'Flood SAR', 'Pollution'].map(layer => (
-         <div key={layer} className="flex items-center gap-2 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full border border-slate-200 text-xs text-slate-600 shadow-sm cursor-pointer hover:bg-white transition-colors">
-           <div className={cn("w-2 h-2 rounded-full", 
-             layer === 'Vegetation' && activeLayer === 'vegetation' ? "bg-emerald-500 animate-pulse" : 
-             layer === 'Pasture' && activeLayer === 'pasture' ? "bg-yellow-500 animate-pulse" :
-             layer === 'Flood SAR' && activeLayer === 'flood' ? "bg-sky-500 animate-pulse" : 
-             layer === 'Pollution' && activeLayer === 'pollution' ? "bg-rose-500 animate-pulse" : "bg-slate-300"
-           )} />
-           {layer}
-         </div>
-       ))}
-    </div>
-  </div>
   );
 };
 
@@ -307,7 +311,7 @@ export default function App() {
         setLocalMessages(prev => [...prev, {
             id: Date.now() + 1,
             sender: 'bot',
-            text: "Based on soil spectral analysis (Zone 4), I recommend nitrogen-rich fertilizer application within the next 48 hours before the expected rainfall."
+            text: "Searching the agricultural database... Analysis of Hadejia LGA yield data indicates a 15% increase in rice production compared to the previous fiscal year. Would you like a detailed PDF report generated for the Ministry?"
         }]);
     }, 1500);
   };
@@ -376,10 +380,13 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
                 <Card className="space-y-4">
-                    <h3 className="font-semibold text-lg text-slate-800 border-b border-slate-100 pb-2">Personal Information</h3>
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <h3 className="font-semibold text-lg text-slate-800">Personal Information</h3>
+                        <span className="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">Step 1 of 3</span>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-slate-500 mb-1">Full Name</label>
+                            <label className="block text-sm font-medium text-slate-500 mb-1">Full Name *</label>
                             <input 
                                 value={formData.name}
                                 onChange={e => setFormData({...formData, name: e.target.value})}
@@ -388,13 +395,19 @@ export default function App() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-500 mb-1">NIN / BVN</label>
+                            <label className="block text-sm font-medium text-slate-500 mb-1 flex items-center gap-1">
+                                NIN / BVN <span className="text-slate-400 text-xs">(Optional)</span>
+                                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-100 text-slate-400 text-[10px] cursor-help" title="Optional: Used only for data accuracy and identity verification">
+                                    ?
+                                </span>
+                            </label>
                             <input 
                                 value={formData.nin}
                                 onChange={e => setFormData({...formData, nin: e.target.value})}
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" 
-                                placeholder="11-digit ID" 
+                                placeholder="11-digit ID (optional)" 
                             />
+                            <p className="text-[10px] text-slate-400 mt-1">For data accuracy only – not required for registration.</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-500 mb-1">LGA / Ward</label>
@@ -413,7 +426,10 @@ export default function App() {
                 </Card>
 
                 <Card className="space-y-4">
-                    <h3 className="font-semibold text-lg text-slate-800 border-b border-slate-100 pb-2">Farm Details</h3>
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <h3 className="font-semibold text-lg text-slate-800">Farm Details</h3>
+                        <span className="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">Step 2 of 3</span>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-500 mb-1">Farm Size (Hectares)</label>
@@ -502,6 +518,9 @@ export default function App() {
 
             <div className="lg:col-span-1">
                 <Card className="flex flex-col items-center justify-center text-center space-y-4 bg-slate-50/50 sticky top-6">
+                    <div className="w-full flex justify-end mb-2">
+                        <span className="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">Step 3 of 3</span>
+                    </div>
                     <div className="relative w-32 h-32 bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-slate-200 shadow-inner">
                         {scanState === 'idle' && <ScanFace className="w-12 h-12 text-slate-400" />}
                         {scanState === 'scanning' && (
@@ -518,8 +537,9 @@ export default function App() {
                         {scanState === 'complete' && <CheckCircle2 className="w-16 h-16 text-emerald-500" />}
                     </div>
                     <div>
-                        <h3 className="font-semibold text-slate-800">Biometric Verification</h3>
+                        <h3 className="font-semibold text-slate-800">Biometric Verification <span className="text-slate-400 text-xs font-normal">(Optional)</span></h3>
                         <p className="text-xs text-slate-500 mt-1">AI Face Match + Liveness Check</p>
+                        <p className="text-[10px] text-slate-400 mt-1">Optional: Used for data accuracy only.</p>
                     </div>
                     <button 
                         onClick={handleScan}
@@ -756,11 +776,22 @@ export default function App() {
       case 'dashboard':
         return (
           <div className="space-y-6">
+            {/* JAMIS Mission Statement */}
+            <div className="bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-100 rounded-xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                    <Leaf className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                    <p className="text-sm text-slate-700"><strong>JAMIS</strong> helps the government plan, support farmers, and improve agriculture across Jigawa State.</p>
+                    <p className="text-[10px] text-slate-400 mt-1">All AI insights are for guidance only. Final decisions are made by field officers.</p>
+                </div>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard label="Total Tonnage" value="14,230 MT" trend="+12%" trendUp={true} icon={Leaf} color="bg-emerald-500" />
               <StatCard label="Warehouse Cap." value="82%" trend="-5%" trendUp={false} icon={LayoutDashboard} color="bg-indigo-500" />
               <StatCard label="Active Farmers" value="1,402" trend="+84" trendUp={true} icon={Users} color="bg-blue-500" />
-              <StatCard label="Risk Alerts" value="12" trend="+3" trendUp={false} icon={AlertTriangle} color="bg-rose-500" />
+              <StatCard label="Needs Attention" value="12" trend="+3" trendUp={false} icon={BrainCircuit} color="bg-amber-500" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -818,10 +849,11 @@ export default function App() {
                         <div className="bg-slate-50 rounded-xl p-2 h-[200px] overflow-y-auto space-y-2 border border-slate-100">
                             {anomalies.map(item => (
                                 <div key={item.id} className="flex gap-3 p-3 rounded-lg bg-white border border-slate-200 hover:border-slate-300 transition-colors shadow-sm">
-                                    <AlertTriangle className={cn("w-4 h-4 mt-0.5 shrink-0", item.type === 'CRITICAL' ? 'text-rose-500' : 'text-amber-500')} />
+                                    <BrainCircuit className={cn("w-4 h-4 mt-0.5 shrink-0", item.type === 'ATTENTION' ? 'text-amber-500' : item.type === 'REVIEW' ? 'text-sky-500' : 'text-emerald-500')} />
                                     <div>
                                         <p className="text-sm text-slate-700 leading-tight font-medium">{item.msg}</p>
                                         <span className="text-[10px] text-slate-400 font-mono mt-1 block">{item.time}</span>
+                                        <span className="text-[9px] text-slate-400 italic">For guidance only. Final decision by field officers.</span>
                                     </div>
                                 </div>
                             ))}
@@ -842,7 +874,7 @@ export default function App() {
         return (
              <div className="space-y-6">
                 <Card>
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex justify-between items-center mb-4">
                         <div>
                          <h2 className="text-xl font-bold text-slate-800">Market Price Radar</h2>
                          <p className="text-slate-500 text-sm">Comparing local Jigawa markets vs National Index</p>
@@ -852,6 +884,13 @@ export default function App() {
                              <div className="flex items-center gap-2 text-sm text-slate-500"><div className="w-3 h-3 rounded-full bg-sky-500"></div> National</div>
                         </div>
                     </div>
+                    <div className="bg-sky-50 border border-sky-100 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-sky-800 flex items-start gap-2">
+                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-sky-200 text-sky-700 text-[10px] shrink-0 mt-0.5">?</span>
+                            <span><strong>What this means:</strong> When Jigawa prices are higher than National, farmers may get better returns locally. When lower, planners may consider storage or export options.</span>
+                        </p>
+                    </div>
+                    <p className="text-[10px] text-slate-400 italic mb-2">For guidance only. Final decision by field officers.</p>
                     
                     <div className="h-[400px] w-full flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
@@ -890,7 +929,7 @@ export default function App() {
                                 <div className="flex flex-col gap-1 mt-2">
                                     {PASTURE_ZONES.map(z => (
                                         <div key={z.name} className="flex items-center gap-2 text-xs">
-                                            <div className={`w-2 h-2 rounded-full ${z.status === 'Optimal' ? 'bg-emerald-500' : z.status === 'Warning' ? 'bg-yellow-500' : 'bg-rose-500'}`} />
+                                            <div className={`w-2 h-2 rounded-full ${z.status === 'Optimal' ? 'bg-emerald-500' : z.status === 'Needs Review' ? 'bg-yellow-500' : 'bg-amber-500'}`} />
                                             <span className="text-slate-700">{z.name} ({z.biomass})</span>
                                         </div>
                                     ))}
@@ -904,22 +943,26 @@ export default function App() {
                     <div className="space-y-6">
                         <Card className="items-start">
                             <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3">
-                                <Activity className="w-5 h-5 text-rose-500" /> Animal Health AI
+                                <Activity className="w-5 h-5 text-emerald-500" /> Animal Health AI Insights
+                                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-100 text-slate-400 text-[10px] cursor-help" title="AI analyzes sensor data to provide early signals for animal health">
+                                    ?
+                                </span>
                             </h3>
                             <div className="space-y-3">
-                                <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl">
+                                <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl">
                                     <div className="flex justify-between items-start mb-1">
-                                        <span className="text-xs font-bold text-rose-700 uppercase">Acoustic Sensor #402</span>
-                                        <span className="text-[10px] text-rose-500">2m ago</span>
+                                        <span className="text-xs font-bold text-amber-700 uppercase">Acoustic Sensor #402</span>
+                                        <span className="text-[10px] text-amber-500">2m ago</span>
                                     </div>
-                                    <p className="text-sm text-slate-700 font-medium">Warning: Respiratory distress detected in Cattle herd (Zone A). Possible CBPP indicator.</p>
+                                    <p className="text-sm text-slate-700 font-medium">AI Insight: Possible respiratory change in Cattle herd (Zone A) – Needs Review for CBPP.</p>
+                                    <p className="text-[9px] text-slate-400 italic mt-1">For guidance only. Final decision by field officers.</p>
                                 </div>
                                 <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
                                     <div className="flex justify-between items-start mb-1">
                                         <span className="text-xs font-bold text-emerald-700 uppercase">Visual AI #119</span>
                                         <span className="text-[10px] text-emerald-500">15m ago</span>
                                     </div>
-                                    <p className="text-sm text-slate-700 font-medium">Gait analysis normal for Sheep flock (Zone C). No signs of foot rot.</p>
+                                    <p className="text-sm text-slate-700 font-medium">AI Insight: Gait analysis normal for Sheep flock (Zone C). No concerns observed.</p>
                                 </div>
                             </div>
                         </Card>
@@ -953,9 +996,16 @@ export default function App() {
                              <Trees className="w-5 h-5 text-emerald-600" /> Livestock ID Registry
                         </h3>
                         <div className="flex gap-2">
-                            <button className="text-sm text-emerald-600 font-medium hover:underline">Download Report</button>
+                            <select className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600">
+                                <option>Export by LGA</option>
+                                <option>Export by Type</option>
+                                <option>Export by Health</option>
+                                <option>Export by Date</option>
+                            </select>
+                            <button className="text-sm text-emerald-600 font-medium hover:underline px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100">Download Report</button>
                         </div>
                     </div>
+                    <p className="text-[10px] text-slate-400 italic mb-3">For guidance only. Final decision by field officers.</p>
                      <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-slate-600">
                             <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
@@ -981,7 +1031,9 @@ export default function App() {
                                         <td className="px-4 py-3">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                                                 row.health === 'Healthy' ? 'bg-emerald-100 text-emerald-700' : 
-                                                row.health === 'Critical' ? 'bg-rose-100 text-rose-700' : 'bg-yellow-100 text-yellow-700'
+                                                row.health === 'Observed' ? 'bg-sky-100 text-sky-700' :
+                                                row.health === 'Needs Review' ? 'bg-yellow-100 text-yellow-700' : 
+                                                row.health === 'Urgent' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-700'
                                             }`}>
                                                 {row.health}
                                             </span>
@@ -1036,9 +1088,9 @@ export default function App() {
                              </motion.div>
                         </div>
                         
-                        <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs text-rose-600 border border-rose-100 shadow-sm font-medium flex items-center gap-2">
-                             <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
-                             High Nitrogen Runoff Detected
+                        <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs text-amber-600 border border-amber-100 shadow-sm font-medium flex items-center gap-2">
+                             <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                             Possible High Nitrogen Activity – Needs Review
                         </div>
                     </div>
                 </Card>
@@ -1065,6 +1117,383 @@ export default function App() {
                 </Card>
              </div>
         );
+      case 'seasonal':
+        return (
+            <div className="space-y-6">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                            <Calendar className="text-indigo-600"/> AI Seasonal Planner
+                        </h2>
+                        <p className="text-slate-500">Predictive Intelligence for agricultural planning</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <select className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600">
+                            <option>All Activities</option>
+                            <option>Planting</option>
+                            <option>Grazing</option>
+                            <option>Harvesting</option>
+                        </select>
+                        <button className="text-sm text-indigo-600 font-medium px-3 py-1 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors">Download Calendar</button>
+                    </div>
+                </div>
+                
+                {/* Mission Note */}
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                        <BrainCircuit className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-slate-700"><strong>AI-Powered Planning:</strong> Seasonal predictions based on satellite data, weather patterns, and historical trends to help planners and farmers optimize activities.</p>
+                        <p className="text-[10px] text-slate-400 mt-1">For guidance only. Final decisions by field officers and farmers.</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Main Calendar Cards */}
+                    <div className="lg:col-span-2 space-y-4">
+                        {SEASONAL_INTELLIGENCE.map((item, idx) => (
+                            <Card key={idx} className="relative overflow-hidden group hover:border-indigo-300 transition-colors">
+                                <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", 
+                                    item.status === 'Active' ? "bg-emerald-500" : 
+                                    item.status === 'Early Warning' ? "bg-amber-500" : "bg-sky-500"
+                                )} />
+                                
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pl-4">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <h3 className="font-bold text-lg text-slate-800">{item.activity}</h3>
+                                            <span className={cn("px-2 py-0.5 rounded text-xs font-bold uppercase",
+                                                item.status === 'Active' ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : 
+                                                item.status === 'Early Warning' ? "bg-amber-50 text-amber-700 border border-amber-100" : "bg-sky-50 text-sky-700 border border-sky-100"
+                                            )}>{item.status}</span>
+                                        </div>
+                                        
+                                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mb-3">
+                                            <div className="flex items-center gap-1.5">
+                                                <Clock className="w-4 h-4" /> 
+                                                <span><strong>Window:</strong> {item.window}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <BrainCircuit className="w-4 h-4 text-indigo-500" />
+                                                <span><strong>AI Confidence:</strong> <span className="text-indigo-600 font-semibold">{item.confidence}</span></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                                            <p className="text-sm text-slate-600"><strong>Current Condition:</strong> {item.condition}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex md:flex-col gap-2 md:items-end">
+                                        <button className="text-xs text-slate-500 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors">View Details</button>
+                                        <button className="text-xs text-indigo-600 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors">Set Reminder</button>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                        
+                        {/* Additional Planned Activities */}
+                        <Card className="border-dashed border-2 border-slate-200 bg-slate-50/50">
+                            <div className="flex items-center justify-center gap-3 py-4 text-slate-400">
+                                <Calendar className="w-5 h-5" />
+                                <span className="text-sm font-medium">More seasonal activities loading from satellite data...</span>
+                            </div>
+                        </Card>
+                    </div>
+
+                    {/* Sidebar Info */}
+                    <div className="lg:col-span-1 space-y-4">
+                        {/* Data Sources */}
+                        <Card>
+                            <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <Satellite className="w-4 h-4 text-sky-500" /> Data Sources
+                            </h4>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                    <span className="text-sm text-slate-600">Sentinel-2 Satellite Imagery</span>
+                                </div>
+                                <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                    <span className="text-sm text-slate-600">Ground Sensors (4 Zones)</span>
+                                </div>
+                                <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                    <span className="text-sm text-slate-600">Weather Station Data</span>
+                                </div>
+                                <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg">
+                                    <div className="w-2 h-2 rounded-full bg-sky-500"></div>
+                                    <span className="text-sm text-slate-600">Historical Yield Records</span>
+                                </div>
+                            </div>
+                        </Card>
+                        
+                        {/* Quick Stats */}
+                        <Card>
+                            <h4 className="font-bold text-slate-800 mb-4">Planning Summary</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-emerald-50 rounded-lg p-3 text-center">
+                                    <p className="text-2xl font-bold text-emerald-700">3</p>
+                                    <p className="text-xs text-emerald-600">Active Windows</p>
+                                </div>
+                                <div className="bg-amber-50 rounded-lg p-3 text-center">
+                                    <p className="text-2xl font-bold text-amber-700">1</p>
+                                    <p className="text-xs text-amber-600">Early Signals</p>
+                                </div>
+                                <div className="bg-sky-50 rounded-lg p-3 text-center">
+                                    <p className="text-2xl font-bold text-sky-700">2</p>
+                                    <p className="text-xs text-sky-600">Upcoming</p>
+                                </div>
+                                <div className="bg-indigo-50 rounded-lg p-3 text-center">
+                                    <p className="text-2xl font-bold text-indigo-700">89%</p>
+                                    <p className="text-xs text-indigo-600">Avg Confidence</p>
+                                </div>
+                            </div>
+                        </Card>
+                        
+                        {/* Help Tip */}
+                        <div className="bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-100 rounded-xl p-4">
+                            <div className="flex items-start gap-2">
+                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-200 text-sky-700 text-[10px] shrink-0 mt-0.5">?</span>
+                                <div>
+                                    <p className="text-xs text-slate-600"><strong>How to use:</strong> Review activity windows and AI confidence levels. Plan field visits and resource allocation around predicted optimal periods.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+      case 'audit':
+        return (
+            <div className="space-y-6">
+                <Card>
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        System Trust & Audit Log
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-slate-400 text-[10px] cursor-help" title="Shows who accessed what data, when, and why">
+                            ?
+                        </span>
+                    </h2>
+                    <p className="text-slate-500 mb-6">Transparent record of all system access and actions.</p>
+                    
+                    <div className="space-y-3">
+                        <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs font-bold">AM</div>
+                            <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                    <p className="text-sm font-medium text-slate-800">Aliyu Musa</p>
+                                    <span className="text-[10px] text-slate-400 font-mono">Today, 10:23 AM</span>
+                                </div>
+                                <p className="text-xs text-slate-500">Viewed farmer records for <strong>Hadejia LGA</strong></p>
+                                <p className="text-[10px] text-slate-400 mt-1">Purpose: Monthly farmer verification</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 text-xs font-bold">FI</div>
+                            <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                    <p className="text-sm font-medium text-slate-800">Fatima Ibrahim</p>
+                                    <span className="text-[10px] text-slate-400 font-mono">Today, 09:15 AM</span>
+                                </div>
+                                <p className="text-xs text-slate-500">Downloaded livestock report for <strong>All LGAs</strong></p>
+                                <p className="text-[10px] text-slate-400 mt-1">Purpose: Vaccination planning report</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-xs font-bold">SB</div>
+                            <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                    <p className="text-sm font-medium text-slate-800">Sani Bello</p>
+                                    <span className="text-[10px] text-slate-400 font-mono">Yesterday, 04:45 PM</span>
+                                </div>
+                                <p className="text-xs text-slate-500">Registered new farmer in <strong>Dutse LGA</strong></p>
+                                <p className="text-[10px] text-slate-400 mt-1">Purpose: New farmer enrollment</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xs font-bold">YU</div>
+                            <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                    <p className="text-sm font-medium text-slate-800">Yusuf Usman</p>
+                                    <span className="text-[10px] text-slate-400 font-mono">Yesterday, 02:30 PM</span>
+                                </div>
+                                <p className="text-xs text-slate-500">Exported market prices for <strong>Kazaure Zone</strong></p>
+                                <p className="text-[10px] text-slate-400 mt-1">Purpose: Price comparison analysis</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-6 flex gap-2">
+                        <select className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600">
+                            <option>Filter by User</option>
+                            <option>Filter by Action</option>
+                            <option>Filter by Date</option>
+                            <option>Filter by LGA</option>
+                        </select>
+                        <button className="text-sm text-emerald-600 font-medium hover:underline px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100">Export Audit Log</button>
+                    </div>
+                </Card>
+            </div>
+        );
+      case 'logistics':
+        return (
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Unified Distribution Ledger */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                <Truck className="text-emerald-600"/> Unified Distribution Ledger
+                            </h2>
+                            <div className="flex gap-2">
+                                <select className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600">
+                                    <option>Export by LGA</option>
+                                    <option>Export by Item</option>
+                                    <option>Export by Status</option>
+                                    <option>Export by Date</option>
+                                </select>
+                                <button className="text-sm text-emerald-600 font-medium hover:underline flex items-center gap-1 px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100">
+                                    Download Report <ArrowLeft className="w-3 h-3 rotate-180" />
+                                </button>
+                            </div>
+                        </div>
+                        <Card className="p-0 overflow-hidden">
+                            <table className="w-full text-left text-sm text-slate-600">
+                                <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-4 py-3">Tracking ID</th>
+                                        <th className="px-4 py-3">LGA / Zone</th>
+                                        <th className="px-4 py-3">Item</th>
+                                        <th className="px-4 py-3">Dispatched / Received</th>
+                                        <th className="px-4 py-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {DISTRIBUTION_LEDGER.map(row => (
+                                        <tr key={row.id} className="hover:bg-slate-50 group transition-colors">
+                                            <td className="px-4 py-3 font-mono text-xs text-slate-400">{row.id}</td>
+                                            <td className="px-4 py-3 font-medium text-slate-800">{row.lga}</td>
+                                            <td className="px-4 py-3 text-slate-600">{row.item}</td>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium">{row.dispatched.toLocaleString()}</span>
+                                                    <span className="text-slate-400">→</span>
+                                                    <span className={cn("font-bold", row.variance.startsWith('-') ? "text-rose-600" : "text-emerald-600")}>
+                                                        {row.received.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border",
+                                                    row.status === 'Verified' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : 
+                                                    "bg-rose-50 text-rose-700 border-rose-100"
+                                                )}>
+                                                    {row.status === 'Leakage' && <AlertOctagon className="w-3 h-3" />}
+                                                    {row.status}
+                                                    {row.status === 'Leakage' && <span className="ml-1">({row.variance})</span>}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </Card>
+                        
+                         {/* Warehouse Inventory */}
+                        <div className="mt-8">
+                             <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+                                <Warehouse className="w-5 h-5 text-indigo-500" /> State Warehouse Inventory
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {WAREHOUSE_STOCK.map(wh => (
+                                    <div key={wh.name} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-16 h-16 bg-slate-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+                                        <div className="relative z-10">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="font-bold text-slate-800">{wh.name}</h4>
+                                                <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded border",
+                                                    wh.utilization > 90 ? "bg-rose-50 text-rose-700 border-rose-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                                )}>{wh.utilization}% Full</span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-slate-100 rounded-full mb-3 overflow-hidden">
+                                                <div style={{ width: `${wh.utilization}%` }} className={cn("h-full rounded-full", wh.utilization > 90 ? "bg-rose-500" : "bg-indigo-500")} />
+                                            </div>
+                                            <div className="space-y-1">
+                                                {wh.items.map((item, idx) => (
+                                                    <div key={idx} className="flex justify-between text-xs">
+                                                        <span className="text-slate-500">{item.name}</span>
+                                                        <span className="font-mono font-medium text-slate-700">{item.count}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* AI Seasonal Calendar (Sidebar) */}
+                    <div className="lg:col-span-1">
+                        <Card className="h-full bg-slate-50/50">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="p-2 bg-emerald-100 rounded-lg">
+                                    <Calendar className="w-5 h-5 text-emerald-600" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-800">AI Seasonal Calendar</h3>
+                                    <p className="text-xs text-slate-500">Predictive Intelligence</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {SEASONAL_INTELLIGENCE.map((item, idx) => (
+                                    <div key={idx} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition-colors">
+                                        <div className={cn("absolute left-0 top-0 bottom-0 w-1", 
+                                            item.status === 'Active' ? "bg-emerald-500" : 
+                                            item.status === 'Early Warning' ? "bg-amber-500" : "bg-sky-500"
+                                        )} />
+                                        
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="font-semibold text-slate-800 text-sm">{item.activity}</h4>
+                                            <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                                                 item.status === 'Active' ? "bg-emerald-50 text-emerald-700" : 
+                                                 item.status === 'Early Warning' ? "bg-amber-50 text-amber-700" : "bg-sky-50 text-sky-700"
+                                            )}>{item.status}</span>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
+                                            <Clock className="w-3 h-3" /> {item.window}
+                                        </div>
+
+                                        <div className="bg-slate-50 rounded-lg p-2 border border-slate-100">
+                                            <div className="flex items-center gap-1.5 mb-1">
+                                                <BrainCircuit className="w-3 h-3 text-indigo-500" />
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">AI Confidence: <span className="text-slate-700">{item.confidence}</span></span>
+                                            </div>
+                                            <p className="text-xs text-slate-600 font-medium leading-tight">
+                                                {item.condition}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-6 p-3 bg-sky-50 border border-sky-100 rounded-xl flex gap-3">
+                                <Satellite className="w-8 h-8 text-sky-500 shrink-0" />
+                                <div>
+                                    <p className="text-xs text-sky-800 font-medium leading-tight">
+                                        Data sourced from Sentinel-2 Satellite & ground sensors in 4 Zones.
+                                    </p>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        );
       default:
         return <div className="text-center text-slate-400 py-20">Module Under Construction</div>;
     }
@@ -1075,7 +1504,7 @@ export default function App() {
     { icon: LayoutDashboard, label: 'Dashboard', view: 'dashboard' },
     { icon: Users, label: 'Farmers', view: 'farmers' },
     { icon: Footprints, label: 'Livestock', view: 'livestock' },
-    { icon: BarChart3, label: 'Market', view: 'market' },
+    { icon: Truck, label: 'Logistics', view: 'logistics' },
     { icon: Menu, label: 'More', view: 'more' }
   ];
 
@@ -1109,11 +1538,13 @@ export default function App() {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 py-4">
-           <SidebarItem icon={LayoutDashboard} label="War Room" active={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={LayoutDashboard} label="Operations Center" active={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} collapsed={isSidebarCollapsed} />
            <SidebarItem icon={ScanFace} label="Registration" active={activeView === 'registration'} onClick={() => setActiveView('registration')} collapsed={isSidebarCollapsed} />
            <SidebarItem icon={Users} label="Farmers Directory" active={activeView === 'farmers' || activeView === 'farmer-detail'} onClick={() => setActiveView('farmers')} collapsed={isSidebarCollapsed} />
            <SidebarItem icon={Footprints} label="Livestock & Range" active={activeView === 'livestock'} onClick={() => setActiveView('livestock')} collapsed={isSidebarCollapsed} />
            <SidebarItem icon={BarChart3} label="Market Radar" active={activeView === 'market'} onClick={() => setActiveView('market')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={Calendar} label="Seasonal Planner" active={activeView === 'seasonal'} onClick={() => setActiveView('seasonal')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={Truck} label="Logistics & Inputs" active={activeView === 'logistics'} onClick={() => setActiveView('logistics')} collapsed={isSidebarCollapsed} />
            <SidebarItem icon={Wind} label="Climate Monitor" active={activeView === 'climate'} onClick={() => setActiveView('climate')} collapsed={isSidebarCollapsed} />
            <SidebarItem icon={ShieldAlert} label="Trust & Audit" active={activeView === 'audit'} onClick={() => setActiveView('audit')} collapsed={isSidebarCollapsed} />
         </nav>
@@ -1143,12 +1574,11 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 border border-emerald-100 rounded-full">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200 rounded-full" title="AI assists with data analysis for planning support">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
               </span>
-              <span className="text-[10px] font-semibold text-emerald-700">AI ACTIVE</span>
+              <span className="text-[10px] font-medium text-slate-500">AI Assist</span>
             </div>
             <button className="relative p-2 text-slate-500 hover:text-emerald-600 transition-colors">
               <Bell className="w-5 h-5" />
@@ -1160,12 +1590,11 @@ export default function App() {
         {/* Desktop Topbar - Hidden on mobile */}
         <header className="hidden lg:flex h-16 border-b border-slate-200 bg-white/80 backdrop-blur-sm items-center justify-between px-6 z-10 shadow-sm">
            <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-100 rounded-full">
+              <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-full" title="AI assists with data verification for planning support">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                   </span>
-                  <span className="text-xs font-semibold text-emerald-700">AI INTEGRITY: ACTIVE</span>
+                  <span className="text-xs font-medium text-slate-500">AI Assist Active</span>
               </div>
               <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-sky-50 border border-sky-100 rounded-full">
                   <Satellite className="w-3 h-3 text-sky-500" />
@@ -1197,6 +1626,14 @@ export default function App() {
              >
                 {renderContent()}
              </motion.div>
+
+             {/* Footer */}
+             <div className="mt-16 py-8 border-t border-slate-200/60 flex flex-col items-center justify-center text-center opacity-70 hover:opacity-100 transition-opacity">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Romana Group</h4>
+                <p className="text-[10px] text-slate-400 font-medium tracking-wide bg-white/50 px-3 py-1 rounded-full border border-slate-100">
+                    Presented by: <span className="text-emerald-700 font-bold">Ibrahim Babangida kani</span> • <span className="font-mono text-xs">+234 803 680 2214</span>
+                </p>
+             </div>
            </div>
         </div>
 
@@ -1234,7 +1671,7 @@ export default function App() {
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder="Ask about crops, pests..." 
+                                placeholder="Query aggregate data..." 
                                 className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none" 
                             />
                             <button onClick={handleSendMessage} className="p-2 bg-emerald-600 rounded-xl hover:bg-emerald-700 text-white shadow-sm"><Send className="w-4 h-4"/></button>
@@ -1246,16 +1683,17 @@ export default function App() {
         
         <button 
             onClick={() => setChatOpen(!chatOpen)}
-            className="absolute bottom-24 lg:bottom-6 right-4 lg:right-6 p-3 lg:p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg shadow-emerald-500/30 z-40 transition-transform hover:scale-105"
-        >
-            <MessageSquare className="w-5 h-5 lg:w-6 lg:h-6" />
+            className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 px-5 h-12 lg:h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg shadow-emerald-500/30 z-40 transition-transform hover:scale-105 flex items-center gap-2"
+        >   
+            <MessageSquare className="w-5 h-5 lg:w-6 lg:h-6" /> 
+            <span className="font-bold text-sm sm:text-base">JAMIS AI</span>
         </button>
 
         {/* Mobile Bottom Navigation */}
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex items-center justify-around px-2 z-50 shadow-lg">
           {mobileNavItems.map((item) => {
             const isActive = item.view === 'more' 
-              ? ['registration', 'climate', 'audit'].includes(activeView)
+              ? ['registration', 'climate', 'audit', 'seasonal'].includes(activeView)
               : activeView === item.view || (item.view === 'farmers' && activeView === 'farmer-detail');
             
             if (item.view === 'more') {
@@ -1279,6 +1717,20 @@ export default function App() {
                         exit={{ opacity: 0, y: 10 }}
                         className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden"
                       >
+                        <button
+                          onClick={() => { setActiveView('market'); setShowMoreMenu(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-slate-700"
+                        >
+                          <BarChart3 className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm">Market Radar</span>
+                        </button>
+                        <button
+                          onClick={() => { setActiveView('seasonal'); setShowMoreMenu(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-slate-700"
+                        >
+                          <Calendar className="w-4 h-4 text-indigo-500" />
+                          <span className="text-sm">Seasonal Planner</span>
+                        </button>
                         <button
                           onClick={() => { setActiveView('registration'); setShowMoreMenu(false); }}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-slate-700"
