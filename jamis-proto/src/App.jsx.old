@@ -1,0 +1,597 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  LayoutDashboard, 
+  ShieldAlert, 
+  Sprout, 
+  Users, 
+  BarChart3, 
+  Settings, 
+  Search, 
+  Bell, 
+  Satellite, 
+  BrainCircuit,
+  Map as MapIcon,
+  Wind,
+  Droplets,
+  AlertTriangle,
+  Leaf,
+  ScanFace,
+  CheckCircle2,
+  XCircle,
+  MessageSquare,
+  Send,
+  Loader2,
+  Maximize2,
+  Menu,
+  X
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer,
+  BarChart, Bar, Legend, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
+} from 'recharts';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+// --- Utility ---
+function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}
+
+// --- Mock Data ---
+
+const cropHealthData = [
+  { month: 'Jan', ndvi: 0.4, moisture: 30 },
+  { month: 'Feb', ndvi: 0.35, moisture: 20 },
+  { month: 'Mar', ndvi: 0.5, moisture: 45 },
+  { month: 'Apr', ndvi: 0.7, moisture: 60 },
+  { month: 'May', ndvi: 0.85, moisture: 75 },
+  { month: 'Jun', ndvi: 0.8, moisture: 70 },
+];
+
+const marketData = [
+  { subject: 'Maize', A: 120, B: 110, fullMark: 150 },
+  { subject: 'Sorghum', A: 98, B: 130, fullMark: 150 },
+  { subject: 'Rice', A: 86, B: 130, fullMark: 150 },
+  { subject: 'Wheat', A: 99, B: 100, fullMark: 150 },
+  { subject: 'Millet', A: 85, B: 90, fullMark: 150 },
+  { subject: 'Soybean', A: 65, B: 85, fullMark: 150 },
+];
+
+const anomalies = [
+  { id: 1, type: 'CRITICAL', msg: 'Multiple identity reg: ID #9928 (Hadejia)', time: '2m ago' },
+  { id: 2, type: 'WARN', msg: 'Fertilizer stock variance: Dutse Depot', time: '15m ago' },
+  { id: 3, type: 'INFO', msg: 'Soil moisture dip: Zone B (Kazaure)', time: '45m ago' },
+  { id: 4, type: 'CRITICAL', msg: 'Illegal logging detected: Sector 4', time: '1h ago' },
+  { id: 5, type: 'WARN', msg: 'Price surge: Gujungu Market (Rice)', time: '3h ago' },
+];
+
+const messages = [
+  { id: 1, sender: 'bot', text: 'Sannu! I am J-Agro Basic. How can I help with your harvest today?' },
+];
+
+// --- Components ---
+
+const SidebarItem = ({ icon: Icon, label, active, onClick, collapsed }) => (
+  <button 
+    onClick={onClick}
+    className={cn(
+      "flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group w-full",
+      active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100",
+      collapsed ? "justify-center" : "justify-start"
+    )}
+  >
+    <Icon className="w-5 h-5" />
+    {!collapsed && <span className="font-medium">{label}</span>}
+    {active && !collapsed && <motion.div layoutId="active-pill" className="ml-auto w-1 h-1 bg-emerald-400 rounded-full" />}
+  </button>
+);
+
+const Card = ({ children, className }) => (
+  <div className={cn("glass-panel rounded-2xl p-6", className)}>
+    {children}
+  </div>
+);
+
+const StatCard = ({ label, value, trend, trendUp, icon: Icon, color }) => (
+  <Card className="relative overflow-hidden group">
+    <div className={cn("absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-10 blur-xl group-hover:opacity-20 transition-opacity", color)} />
+    <div className="flex justify-between items-start mb-4">
+      <div>
+        <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">{label}</p>
+        <h3 className="text-2xl font-bold text-slate-100 mt-1">{value}</h3>
+      </div>
+      <div className={cn("p-2 rounded-lg bg-slate-800/50", color.replace('bg-', 'text-'))}>
+        <Icon className="w-5 h-5" />
+      </div>
+    </div>
+    <div className="flex items-center gap-2 text-sm">
+      <span className={cn("font-medium", trendUp ? "text-emerald-400" : "text-rose-400")}>
+        {trend}
+      </span>
+      <span className="text-slate-500">vs last week</span>
+    </div>
+  </Card>
+);
+
+const WarRoomMap = ({ activeLayer }) => {
+  return (
+    <div className="relative w-full h-[500px] bg-slate-900 rounded-2xl overflow-hidden border border-slate-700/50 group">
+      {/* Grid Background Mock */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20" />
+      
+      {/* Stylized Jigawa Shape (Abstract SVG) */}
+      <div className="absolute inset-0 flex items-center justify-center p-10">
+        <svg viewBox="0 0 400 300" className="w-full h-full drop-shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <motion.path 
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 2, ease: "easeInOut" }}
+            d="M50,150 Q100,50 200,80 T350,150 T200,250 T50,150" 
+            fill="none" 
+            stroke={
+              activeLayer === 'vegetation' ? '#34d399' : 
+              activeLayer === 'flood' ? '#38bdf8' : '#fb7185'
+            }
+            strokeWidth="2"
+            className="opacity-50"
+          />
+           <motion.path 
+            d="M50,150 Q100,50 200,80 T350,150 T200,250 T50,150" 
+            fill={
+              activeLayer === 'vegetation' ? 'rgba(52, 211, 153, 0.1)' : 
+              activeLayer === 'flood' ? 'rgba(56, 189, 248, 0.1)' : 'rgba(251, 113, 133, 0.1)'
+            }
+            className="blur-xl"
+          />
+          
+          {/* Animated Hotspots */}
+          {[1,2,3].map(i => (
+             <motion.circle 
+               key={i}
+               cx={100 * i} cy={100 + (i*20)} r="4" 
+               fill={activeLayer === 'vegetation' ? '#10b981' : activeLayer === 'flood' ? '#0ea5e9' : '#f43f5e'}
+               animate={{ r: [4, 12, 4], opacity: [1, 0, 1] }}
+               transition={{ duration: 2 + i, repeat: Infinity }}
+             />
+          ))}
+        </svg>
+      </div>
+
+      {/* Map Overlay UI */}
+      <div className="absolute top-4 right-4 flex flex-col gap-2">
+         {['Vegetation', 'Flood SAR', 'Pollution'].map(layer => (
+           <div key={layer} className="flex items-center gap-2 bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-full border border-slate-700 text-xs text-slate-300">
+             <div className={cn("w-2 h-2 rounded-full", 
+               layer === 'Vegetation' && activeLayer === 'vegetation' ? "bg-emerald-500 animate-pulse" : 
+               layer === 'Flood SAR' && activeLayer === 'flood' ? "bg-sky-500 animate-pulse" : 
+               layer === 'Pollution' && activeLayer === 'pollution' ? "bg-rose-500 animate-pulse" : "bg-slate-600"
+             )} />
+             {layer}
+           </div>
+         ))}
+      </div>
+      
+      <div className="absolute bottom-4 left-4 bg-slate-900/90 backdrop-blur p-4 rounded-xl border border-slate-700 max-w-xs">
+        <div className="flex items-center gap-2 mb-2">
+           <Satellite className="w-4 h-4 text-emerald-400" />
+           <span className="text-xs font-bold text-slate-200">SENTINEL-2 LIVE FEED</span>
+        </div>
+        <p className="text-xs text-slate-400">Resolution: 10m | Pass: 14:02 UTC | Cloud Cover: 12%</p>
+      </div>
+    </div>
+  );
+};
+
+// --- App Component ---
+
+export default function App() {
+  const [activeView, setActiveView] = useState('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [mapLayer, setMapLayer] = useState('vegetation');
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [localMessages, setLocalMessages] = useState(messages);
+
+  // Responsive sidebar automatically collapsed on mount if small screen
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) setIsSidebarCollapsed(true);
+      else setIsSidebarCollapsed(false);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return;
+    const newMsg = { id: Date.now(), sender: 'user', text: chatInput };
+    setLocalMessages([...localMessages, newMsg]);
+    setChatInput('');
+    
+    // Mock Response
+    setTimeout(() => {
+        setLocalMessages(prev => [...prev, {
+            id: Date.now() + 1,
+            sender: 'bot',
+            text: "Based on soil spectral analysis (Zone 4), I recommend nitrogen-rich fertilizer application within the next 48 hours before the expected rainfall."
+        }]);
+    }, 1500);
+  };
+
+  const RegistrationForm = () => {
+    const [scanState, setScanState] = useState('idle'); // idle, scanning, complete
+    
+    const handleScan = () => {
+        setScanState('scanning');
+        setTimeout(() => setScanState('complete'), 3000);
+    };
+
+    return (
+      <div className="max-w-2xl mx-auto">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Users className="text-emerald-400" /> New Farmer Registration
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Full Name</label>
+                    <input className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="e.g. Ibrahim Musa" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">NIN / BVN</label>
+                    <input className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500" placeholder="11-digit ID" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">LGA / Ward</label>
+                    <select className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                        <option>Dutse</option>
+                        <option>Hadejia</option>
+                        <option>Kazaure</option>
+                    </select>
+                </div>
+            </Card>
+
+            <Card className="flex flex-col items-center justify-center text-center space-y-4 bg-slate-900/80">
+                <div className="relative w-32 h-32 bg-slate-800 rounded-full flex items-center justify-center overflow-hidden border-2 border-slate-700">
+                    {scanState === 'idle' && <ScanFace className="w-12 h-12 text-slate-500" />}
+                    {scanState === 'scanning' && (
+                        <>
+                            <motion.div 
+                                className="absolute inset-0 bg-emerald-500/20"
+                                animate={{ top: ['0%', '100%'] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                                style={{ height: '4px', boxShadow: '0 0 10px #10b981' }}
+                            />
+                            <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
+                        </>
+                    )}
+                    {scanState === 'complete' && <CheckCircle2 className="w-16 h-16 text-emerald-500" />}
+                </div>
+                <div>
+                    <h3 className="font-semibold text-slate-200">Biometric Verification</h3>
+                    <p className="text-xs text-slate-400 mt-1">AI Face Match + Liveness Check</p>
+                </div>
+                <button 
+                    onClick={handleScan}
+                    disabled={scanState !== 'idle'}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm border border-slate-600 transition-colors disabled:opacity-50"
+                >
+                    {scanState === 'idle' ? 'Start Scan' : scanState === 'scanning' ? 'Scanning...' : 'Verified'}
+                </button>
+            </Card>
+        </div>
+        
+        <div className="mt-6 flex justify-end">
+             <button className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium shadow-lg shadow-emerald-900/20 flex items-center gap-2">
+                 Submit Registration <Send className="w-4 h-4" />
+             </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    switch (activeView) {
+      case 'dashboard':
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard label="Total Tonnage" value="14,230 MT" trend="+12%" trendUp={true} icon={Leaf} color="bg-emerald-500" />
+              <StatCard label="Warehouse Cap." value="82%" trend="-5%" trendUp={false} icon={LayoutDashboard} color="bg-indigo-500" />
+              <StatCard label="Active Farmers" value="1,402" trend="+84" trendUp={true} icon={Users} color="bg-blue-500" />
+              <StatCard label="Risk Alerts" value="12" trend="+3" trendUp={false} icon={AlertTriangle} color="bg-rose-500" />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-4">
+                 <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-slate-200 flex items-center gap-2"><MapIcon className="w-5 h-5 text-emerald-400"/> Operational Map: Jigawa State</h2>
+                    <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
+                        {['vegetation', 'flood', 'pollution'].map(l => (
+                            <button
+                                key={l}
+                                onClick={() => setMapLayer(l)}
+                                className={cn(
+                                    "px-3 py-1 text-xs rounded-md capitalize transition-all",
+                                    mapLayer === l ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+                                )}
+                            >
+                                {l}
+                            </button>
+                        ))}
+                    </div>
+                 </div>
+                 <WarRoomMap activeLayer={mapLayer} />
+              </div>
+              
+              <div className="space-y-6">
+                 <Card className="h-full">
+                    <h3 className="font-semibold text-slate-200 mb-4 flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-emerald-400"/> Crop Health (NDVI)
+                    </h3>
+                    <div className="h-[200px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={cropHealthData}>
+                                <defs>
+                                    <linearGradient id="colorNdvi" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                                <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
+                                <YAxis stroke="#64748b" fontSize={12} />
+                                <ReTooltip 
+                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155' }}
+                                    itemStyle={{ color: '#e2e8f0' }}
+                                />
+                                <Area type="monotone" dataKey="ndvi" stroke="#10b981" fillOpacity={1} fill="url(#colorNdvi)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="mt-6">
+                        <h3 className="font-semibold text-slate-200 mb-4 flex items-center gap-2">
+                           <ShieldAlert className="w-4 h-4 text-rose-400"/> Audit Log
+                        </h3>
+                        <div className="bg-slate-950/50 rounded-xl p-2 h-[200px] overflow-y-auto space-y-2 border border-slate-800">
+                            {anomalies.map(item => (
+                                <div key={item.id} className="flex gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/50 hover:bg-slate-800 transition-colors">
+                                    <AlertTriangle className={cn("w-4 h-4 mt-0.5 shrink-0", item.type === 'CRITICAL' ? 'text-rose-500' : 'text-amber-500')} />
+                                    <div>
+                                        <p className="text-sm text-slate-300 leading-tight">{item.msg}</p>
+                                        <span className="text-[10px] text-slate-500 font-mono mt-1 block">{item.time}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                 </Card>
+              </div>
+            </div>
+          </div>
+        );
+      case 'registration':
+        return <RegistrationForm />;
+      case 'market':
+        return (
+             <div className="space-y-6">
+                <Card>
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                         <h2 className="text-xl font-bold">Market Price Radar</h2>
+                         <p className="text-slate-400 text-sm">Comparing local Jigawa markets vs National Index</p>
+                        </div>
+                        <div className="flex gap-2">
+                             <div className="flex items-center gap-2 text-sm text-slate-400"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> Jigawa</div>
+                             <div className="flex items-center gap-2 text-sm text-slate-400"><div className="w-3 h-3 rounded-full bg-sky-500"></div> National</div>
+                        </div>
+                    </div>
+                    
+                    <div className="h-[400px] w-full flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={marketData}>
+                            <PolarGrid stroke="#334155" />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                            <PolarRadiusAxis angle={30} domain={[0, 150]} stroke="#475569" />
+                            <Radar name="Jigawa" dataKey="A" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.3} />
+                            <Radar name="National" dataKey="B" stroke="#0ea5e9" strokeWidth={2} fill="#0ea5e9" fillOpacity={0.3} />
+                            <ReTooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155' }} itemStyle={{ color: '#fff' }} />
+                            <Legend />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+             </div>
+        );
+      case 'climate':
+        return (
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Wind className="w-5 h-5 text-sky-400"/> Pollution Heatmap</h2>
+                    <div className="h-[300px] bg-slate-900 rounded-xl relative overflow-hidden flex items-center justify-center border border-slate-700">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-rose-900/20 via-slate-900 to-slate-900 z-0"></div>
+                        {/* Mock Heatmap */}
+                        <div className="grid grid-cols-6 grid-rows-6 gap-1 w-full h-full p-4">
+                             {Array.from({length: 36}).map((_, i) => (
+                                 <div key={i} className="rounded-sm" style={{ 
+                                     backgroundColor: `rgba(244, 63, 94, ${Math.random() * 0.5})` 
+                                 }}></div>
+                             ))}
+                        </div>
+                        <div className="absolute bottom-4 right-4 bg-slate-950/80 px-3 py-1 rounded-full text-xs text-rose-300 border border-rose-900/50">High Nitrogen Runoff Detected</div>
+                    </div>
+                </Card>
+                <Card>
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Sprout className="w-5 h-5 text-emerald-400"/> Deforestation Tracking</h2>
+                    <div className="h-[300px]">
+                         <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={[
+                                { zone: 'Zone A', preserved: 85, loss: 15 },
+                                { zone: 'Zone B', preserved: 60, loss: 40 },
+                                { zone: 'Zone C', preserved: 92, loss: 8 },
+                                { zone: 'Zone D', preserved: 75, loss: 25 },
+                            ]}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                                <XAxis dataKey="zone" stroke="#64748b" />
+                                <YAxis stroke="#64748b" />
+                                <ReTooltip cursor={{fill: '#1e293b'}} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155' }} />
+                                <Legend />
+                                <Bar dataKey="preserved" name="Preserved Cover" stackId="a" fill="#10b981" />
+                                <Bar dataKey="loss" name="Forest Loss" stackId="a" fill="#f43f5e" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+             </div>
+        );
+      default:
+        return <div className="text-center text-slate-500 py-20">Module Under Construction</div>;
+    }
+  };
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30">
+        
+      {/* Sidebar */}
+      <motion.aside 
+        initial={false}
+        animate={{ width: isSidebarCollapsed ? 80 : 280 }}
+        className="h-full bg-slate-900/50 border-r border-slate-800 backdrop-blur-xl flex flex-col z-20 relative"
+      >
+        <div className="p-6 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+             <div className="w-4 h-4 bg-white rounded-full" />
+          </div>
+          {!isSidebarCollapsed && (
+            <motion.h1 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent"
+            >
+                JAMIS <span className="text-emerald-500">2.0</span>
+            </motion.h1>
+          )}
+        </div>
+
+        <nav className="flex-1 px-4 space-y-2 py-4">
+           <SidebarItem icon={LayoutDashboard} label="War Room" active={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={Users} label="Registration" active={activeView === 'registration'} onClick={() => setActiveView('registration')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={BarChart3} label="Market Radar" active={activeView === 'market'} onClick={() => setActiveView('market')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={Wind} label="Climate Monitor" active={activeView === 'climate'} onClick={() => setActiveView('climate')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={ShieldAlert} label="Trust & Audit" active={activeView === 'audit'} onClick={() => setActiveView('audit')} collapsed={isSidebarCollapsed} />
+        </nav>
+
+        <div className="p-4 border-t border-slate-800">
+           <SidebarItem icon={Settings} label="System Config" onClick={() => {}} collapsed={isSidebarCollapsed} />
+           <button 
+             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+             className="mt-2 w-full flex items-center justify-center p-2 text-slate-500 hover:text-slate-300"
+           >
+              {isSidebarCollapsed ? <Menu className="w-5 h-5"/> : <div className="text-xs uppercase font-bold tracking-widest flex items-center gap-2"><div className="w-full h-px bg-slate-800"/> Collapse</div>}
+           </button>
+        </div>
+      </motion.aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col relative overflow-hidden grid-bg">
+        {/* Topbar */}
+        <header className="h-16 border-b border-slate-800/50 bg-slate-900/30 backdrop-blur-md flex items-center justify-between px-6 z-10">
+           <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-xs font-semibold text-emerald-400">AI INTEGRITY: ACTIVE</span>
+              </div>
+              <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-sky-500/10 border border-sky-500/20 rounded-full">
+                  <Satellite className="w-3 h-3 text-sky-400" />
+                  <span className="text-xs font-semibold text-sky-400">SAT-LINK: OPTIMAL</span>
+              </div>
+           </div>
+
+           <div className="flex items-center gap-4">
+               <div className="relative hidden md:block">
+                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                   <input type="text" placeholder="Search data, farms, IDs..." className="w-64 bg-slate-800/50 border border-slate-700 rounded-full pl-9 pr-4 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500/50 transition-colors" />
+               </div>
+               <button className="relative p-2 text-slate-400 hover:text-emerald-400 transition-colors">
+                   <Bell className="w-5 h-5" />
+                   <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full border-2 border-slate-900" />
+               </button>
+               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-sky-500 border border-white/10" />
+           </div>
+        </header>
+
+        {/* Scrollable View Area */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+           <div className="max-w-7xl mx-auto">
+             <motion.div
+               key={activeView}
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.3 }}
+             >
+                {renderContent()}
+             </motion.div>
+           </div>
+        </div>
+
+        {/* J-Agro Bot Bubble */}
+        <AnimatePresence>
+            {chatOpen && (
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="absolute bottom-20 right-6 w-96 h-[450px] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 glass-panel"
+                >
+                    <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-emerald-900/10">
+                        <div className="flex items-center gap-2">
+                            <BrainCircuit className="w-5 h-5 text-emerald-400" />
+                            <h3 className="font-semibold text-white">J-Agro AI</h3>
+                        </div>
+                        <button onClick={() => setChatOpen(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4"/></button>
+                    </div>
+                    
+                    <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                        {localMessages.map(msg => (
+                            <div key={msg.id} className={cn("flex", msg.sender === 'user' ? "justify-end" : "justify-start")}>
+                                <div className={cn("max-w-[80%] p-3 rounded-2xl text-sm", 
+                                    msg.sender === 'user' ? "bg-emerald-600 text-white rounded-tr-none" : "bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700")}>
+                                    {msg.text}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="p-3 bg-slate-900/50 border-t border-slate-800">
+                        <div className="flex gap-2">
+                            <input 
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                placeholder="Ask about crops, pests..." 
+                                className="flex-1 bg-slate-800 border-none rounded-xl px-4 py-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 outline-none" 
+                            />
+                            <button onClick={handleSendMessage} className="p-2 bg-emerald-600 rounded-xl hover:bg-emerald-500 text-white"><Send className="w-4 h-4"/></button>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+        
+        <button 
+            onClick={() => setChatOpen(!chatOpen)}
+            className="absolute bottom-6 right-6 p-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] z-40 transition-transform hover:scale-105"
+        >
+            <MessageSquare className="w-6 h-6" />
+        </button>
+
+      </main>
+    </div>
+  );
+}

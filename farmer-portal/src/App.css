@@ -1,0 +1,26 @@
+/* Farmer Portal - Custom Styles */
+
+/* Hide scrollbar for horizontal scroll areas */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area utilities for iOS */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Responsive container positioning */
+@media (min-width: 768px) {
+  .app-container {
+    position: relative;
+  }
+}
