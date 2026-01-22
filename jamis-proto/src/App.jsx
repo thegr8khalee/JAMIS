@@ -40,7 +40,8 @@ import {
   Calendar,
   AlertOctagon,
   Warehouse,
-  TrendingDown
+  TrendingDown,
+  Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -48,6 +49,8 @@ import {
   BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
 import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip as LeafletTooltip } from 'react-leaflet';
+import { useTranslation } from 'react-i18next';
+
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -56,67 +59,84 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-// --- Mock Data ---
-
-const cropHealthData = [
-  { month: 'Jan', ndvi: 0.4, moisture: 30 },
-  { month: 'Feb', ndvi: 0.35, moisture: 20 },
-  { month: 'Mar', ndvi: 0.5, moisture: 45 },
-  { month: 'Apr', ndvi: 0.7, moisture: 60 },
-  { month: 'May', ndvi: 0.85, moisture: 75 },
-  { month: 'Jun', ndvi: 0.8, moisture: 70 },
-];
-
-const marketData = [
-  { subject: 'Maize', A: 120, B: 110, fullMark: 150 },
-  { subject: 'Sorghum', A: 98, B: 130, fullMark: 150 },
-  { subject: 'Rice', A: 86, B: 130, fullMark: 150 },
-  { subject: 'Wheat', A: 99, B: 100, fullMark: 150 },
-  { subject: 'Millet', A: 85, B: 90, fullMark: 150 },
-  { subject: 'Soybean', A: 65, B: 85, fullMark: 150 },
-];
-
-const anomalies = [
-  { id: 1, type: 'ATTENTION', msg: 'AI Insight: Multiple identity registration needs review - ID #9928 (Hadejia)', time: '2m ago' },
-  { id: 2, type: 'REVIEW', msg: 'Early Signal: Fertilizer stock variance at Dutse Depot', time: '15m ago' },
-  { id: 3, type: 'INFO', msg: 'AI Insight: Soil moisture change in Zone B (Kazaure)', time: '45m ago' },
-  { id: 4, type: 'ATTENTION', msg: 'Needs Attention: Possible unauthorized activity in Sector 4', time: '1h ago' },
-  { id: 5, type: 'REVIEW', msg: 'Early Signal: Price change at Gujungu Market (Rice)', time: '3h ago' },
-];
-
-const DISTRIBUTION_LEDGER = [
-    { id: 'TRK-2024-001', lga: 'Hadejia', item: 'NPK Fertilizer (Bags)', dispatched: 5000, received: 4850, status: 'Leakage', variance: '-150' },
-    { id: 'TRK-2024-002', lga: 'Dutse', item: 'Improved Rice Seeds', dispatched: 2000, received: 2000, status: 'Verified', variance: '0' },
-    { id: 'TRK-2024-003', lga: 'Kazaure', item: 'FMD Vaccines (Vials)', dispatched: 10000, received: 10000, status: 'Verified', variance: '0' },
-    { id: 'TRK-2024-004', lga: 'Gumel', item: 'Solar Pumps', dispatched: 50, received: 48, status: 'Leakage', variance: '-2' },
-];
-
-const SEASONAL_INTELLIGENCE = [
-    { activity: 'Sorghum Planting', window: 'May 15 - Jun 10', confidence: '94%', condition: 'Soil Moisture Optimal', status: 'Active' },
-    { activity: 'Cattle Grazing (Zone C)', window: 'Nov 01 - Feb 28', confidence: '88%', condition: 'Biomass Adequate', status: 'Early Warning' },
-    { activity: 'Dry Season Wheat', window: 'Nov 15 - Dec 20', confidence: '91%', condition: 'Temperature Favorable', status: 'Upcoming' },
-];
-
-const WAREHOUSE_STOCK = [
-    { name: 'Dutse Central', capacity: '10000 MT', utilization: 85, items: [{ name: 'Fertilizer', count: '4500 Bags' }, { name: 'Seeds', count: '2100 Bags' }] },
-    { name: 'Hadejia North', capacity: '8000 MT', utilization: 42, items: [{ name: 'Grains', count: '1200 MT' }, { name: 'Pesticides', count: '500 L' }] },
-    { name: 'Birnin Kudu', capacity: '12000 MT', utilization: 91, items: [{ name: 'Fertilizer', count: '8000 Bags' }, { name: 'Tractors', count: '12 Units' }] },
-];
-
-const messages = [
-  { id: 1, sender: 'bot', text: 'Good day. I am JAMIS AI. I can assist with policy analysis, agricultural data queries, and report generation. How may I be of service?' },
-];
-
-const INITIAL_FARMERS = [
-  { id: 1, name: "Ibrahim Musa", lga: "Hadejia", crop: "Rice", performance: "High", coop: "Arewa Rice", status: "Active" },
-  { id: 2, name: "Fatima Aliyu", lga: "Dutse", crop: "Wheat", performance: "Average", coop: "Dutse Farmers", status: "Pending" },
-  { id: 3, name: "Sani Bello", lga: "Kazaure", crop: "Sorghum", performance: "High", coop: "Kazaure Union", status: "Active" },
-  { id: 4, name: "Yusuf Usman", lga: "Hadejia", crop: "Rice", performance: "Low", coop: "Arewa Rice", status: "Flagged" },
-  { id: 5, name: "Amina Lawal", lga: "Dutse", crop: "Millet", performance: "Average", coop: "Dutse Farmers", status: "Active" },
-  { id: 6, name: "Musa Garba", lga: "Gumel", crop: "Sesame", performance: "High", coop: "Gumel Exports", status: "Active" },
-  { id: 7, name: "Zainab Abba", lga: "Ringim", crop: "Rice", performance: "High", coop: "Ringim Rice", status: "Active" },
-  { id: 8, name: "Umar Farouk", lga: "Kazaure", crop: "Wheat", performance: "Low", coop: "Kazaure Union", status: "Review" },
-];
+// --- Mock Data Helper ---
+const getMockData = (t) => ({
+  cropHealthData: [
+    { month: 'Jan', ndvi: 0.4, moisture: 30 },
+    { month: 'Feb', ndvi: 0.35, moisture: 20 },
+    { month: 'Mar', ndvi: 0.5, moisture: 45 },
+    { month: 'Apr', ndvi: 0.7, moisture: 60 },
+    { month: 'May', ndvi: 0.85, moisture: 75 },
+    { month: 'Jun', ndvi: 0.8, moisture: 70 },
+  ],
+  marketData: [
+    { subject: t('maize'), A: 120, B: 110, fullMark: 150 },
+    { subject: t('sorghum'), A: 98, B: 130, fullMark: 150 },
+    { subject: t('rice'), A: 86, B: 130, fullMark: 150 },
+    { subject: t('wheat'), A: 99, B: 100, fullMark: 150 },
+    { subject: t('millet'), A: 85, B: 90, fullMark: 150 },
+    { subject: t('soybean'), A: 65, B: 85, fullMark: 150 },
+  ],
+  anomalies: [
+    { id: 1, type: 'ATTENTION', msg: t('anomaly_msg_1'), time: '2m ago' },
+    { id: 2, type: 'REVIEW', msg: t('anomaly_msg_2'), time: '15m ago' },
+    { id: 3, type: 'INFO', msg: t('anomaly_msg_3'), time: '45m ago' },
+    { id: 4, type: 'ATTENTION', msg: t('anomaly_msg_4'), time: '1h ago' },
+    { id: 5, type: 'REVIEW', msg: t('anomaly_msg_5'), time: '3h ago' },
+  ],
+  distributionLedger: [
+    { id: 'TRK-2024-001', lga: 'Hadejia', item: t('npk_fertilizer_bags'), dispatched: 5000, received: 4850, status: t('leakage_status'), variance: '-150' },
+    { id: 'TRK-2024-002', lga: 'Dutse', item: t('improved_rice_seeds'), dispatched: 2000, received: 2000, status: t('verified_status'), variance: '0' },
+    { id: 'TRK-2024-003', lga: 'Kazaure', item: t('fmd_vaccines'), dispatched: 10000, received: 10000, status: t('verified_status'), variance: '0' },
+    { id: 'TRK-2024-004', lga: 'Gumel', item: t('solar_pumps'), dispatched: 50, received: 48, status: t('leakage_status'), variance: '-2' },
+  ],
+  seasonalIntelligence: [
+    { activity: t('sorghum_planting'), window: 'May 15 - Jun 10', confidence: '94%', condition: t('soil_moisture_optimal'), status: t('active') },
+    { activity: t('cattle_grazing'), window: 'Nov 01 - Feb 28', confidence: '88%', condition: t('biomass_adequate'), status: t('early_warning') },
+    { activity: t('dry_season_wheat'), window: 'Nov 15 - Dec 20', confidence: '91%', condition: t('temp_favorable'), status: t('upcoming') },
+  ],
+  warehouseStock: [
+    { name: t('dutse_central'), capacity: '10000 MT', utilization: 85, items: [{ name: t('fertilizer'), count: '4500 Bags' }, { name: t('seeds'), count: '2100 Bags' }] },
+    { name: t('hadejia_north'), capacity: '8000 MT', utilization: 42, items: [{ name: t('grains'), count: '1200 MT' }, { name: t('pesticides'), count: '500 L' }] },
+    { name: t('birnin_kudu'), capacity: '12000 MT', utilization: 91, items: [{ name: t('fertilizer'), count: '8000 Bags' }, { name: t('tractors'), count: '12 Units' }] },
+  ],
+  initialFarmers: [
+    { id: 1, name: "Ibrahim Musa", lga: "Hadejia", crop: t('rice'), performance: t('high'), coop: "Arewa Rice", status: t('active') },
+    { id: 2, name: "Fatima Aliyu", lga: "Dutse", crop: t('wheat'), performance: t('average'), coop: "Dutse Farmers", status: t('pending') },
+    { id: 3, name: "Sani Bello", lga: "Kazaure", crop: t('sorghum'), performance: t('high'), coop: "Kazaure Union", status: t('active') },
+    { id: 4, name: "Yusuf Usman", lga: "Hadejia", crop: t('rice'), performance: t('low'), coop: "Arewa Rice", status: t('flagged') },
+    { id: 5, name: "Amina Lawal", lga: "Dutse", crop: t('millet'), performance: t('average'), coop: "Dutse Farmers", status: t('active') },
+    { id: 6, name: "Musa Garba", lga: "Gumel", crop: t('sesame'), performance: t('high'), coop: "Gumel Exports", status: t('active') },
+    { id: 7, name: "Zainab Abba", lga: "Ringim", crop: t('rice'), performance: t('high'), coop: "Ringim Rice", status: t('active') },
+    { id: 8, name: "Umar Farouk", lga: "Kazaure", crop: t('wheat'), performance: t('low'), coop: "Kazaure Union", status: t('review_status') },
+  ],
+  livestockRegistry: [
+    { id: 'LS-292', type: t('cattle'), breed: t('gudali'), owner: 'Musa Ibrahim', lga: 'Hadejia', health: t('healthy'), lastVaccine: 'FMD - Jan 10' },
+    { id: 'LS-293', type: t('sheep'), breed: t('balami'), owner: 'Aliyu Sani', lga: 'Dutse', health: t('needs_review'), lastVaccine: 'PPR - Pending' },
+    { id: 'LS-294', type: t('camel'), breed: t('ja'), owner: 'Farouk Umar', lga: 'Kazaure', health: t('healthy'), lastVaccine: 'Anthrax - Dec 20' },
+    { id: 'LS-295', type: t('cattle'), breed: t('white_fulani'), owner: 'Yusuf Bala', lga: 'Hadejia', health: t('urgent'), lastVaccine: 'None' },
+    { id: 'LS-296', type: t('goat'), breed: t('red_sokoto'), owner: 'Amina Lawal', lga: 'Ringim', health: t('observed'), lastVaccine: 'PPR - Jan 05' },
+  ],
+  vaccineData: [
+    { lga: 'Hadejia', coverage: 85, target: 100 },
+    { lga: 'Dutse', coverage: 72, target: 100 },
+    { lga: 'Kazaure', coverage: 64, target: 100 },
+    { lga: 'Gumel', coverage: 91, target: 100 },
+    { lga: 'Ringim', coverage: 58, target: 100 },
+  ],
+  pastureZones: [
+    { name: t('northern_grazing_zone'), status: t('optimal'), biomass: '4.2 ton/ha', alerts: 0 },
+    { name: t('hadejia_wetlands_zone'), status: t('needs_review'), biomass: '1.8 ton/ha', alerts: 2 },
+    { name: t('dutse_range_zone'), status: t('needs_visit'), biomass: '0.9 ton/ha', alerts: 5 },
+  ],
+  fieldOfficers: [
+    { id: 'FO-001', name: "Malam Yusuf", lga: "Hadejia", status: t('active'), verifications: 145, lastActive: "10 mins ago", phone: "+234 802 123 4567" },
+    { id: 'FO-002', name: "Hajia Fatima", lga: "Dutse", status: t('active'), verifications: 98, lastActive: "1 hour ago", phone: "+234 803 987 6543" },
+    { id: 'FO-003', name: "Ibrahim Sani", lga: "Kazaure", status: t('offline'), verifications: 210, lastActive: "2 days ago", phone: "+234 806 555 1212" },
+    { id: 'FO-004', name: "Aliyu Bello", lga: "Gumel", status: t('active'), verifications: 67, lastActive: "5 mins ago", phone: "+234 809 111 2222" },
+    { id: 'FO-005', name: "Zainab Umar", lga: "Ringim", status: t('on_leave'), verifications: 0, lastActive: "1 week ago", phone: "+234 810 333 4444" },
+  ],
+});
 
 const JIGAWA_LGAS = [
   "Auyo", "Babura", "Biriniwa", "Birnin Kudu", "Buji", "Dutse", 
@@ -126,36 +146,70 @@ const JIGAWA_LGAS = [
   "Ringim", "Roni", "Sule Tankarkar", "Taura", "Yankwashi"
 ];
 
-// --- Mock Livestock Data ---
-const LIVESTOCK_REGISTRY = [
-    { id: 'LS-292', type: 'Cattle', breed: 'Gudali', owner: 'Musa Ibrahim', lga: 'Hadejia', health: 'Healthy', lastVaccine: 'FMD - Jan 10' },
-    { id: 'LS-293', type: 'Sheep', breed: 'Balami', owner: 'Aliyu Sani', lga: 'Dutse', health: 'Needs Review', lastVaccine: 'PPR - Pending' },
-    { id: 'LS-294', type: 'Camel', breed: 'Ja', owner: 'Farouk Umar', lga: 'Kazaure', health: 'Healthy', lastVaccine: 'Anthrax - Dec 20' },
-    { id: 'LS-295', type: 'Cattle', breed: 'White Fulani', owner: 'Yusuf Bala', lga: 'Hadejia', health: 'Urgent', lastVaccine: 'None' },
-    { id: 'LS-296', type: 'Goat', breed: 'Red Sokoto', owner: 'Amina Lawal', lga: 'Ringim', health: 'Observed', lastVaccine: 'PPR - Jan 05' },
-];
+// --- Shared Components ---
 
-const VACCINE_DATA = [
-    { lga: 'Hadejia', coverage: 85, target: 100 },
-    { lga: 'Dutse', coverage: 72, target: 100 },
-    { lga: 'Kazaure', coverage: 64, target: 100 },
-    { lga: 'Gumel', coverage: 91, target: 100 },
-    { lga: 'Ringim', coverage: 58, target: 100 },
-];
+// Toast Component
+const ToastContainer = ({ toasts, removeToast }) => (
+  <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none">
+    <AnimatePresence>
+      {toasts.map(toast => (
+        <motion.div
+           key={toast.id}
+           initial={{ opacity: 0, y: 20, scale: 0.9 }}
+           animate={{ opacity: 1, y: 0, scale: 1 }}
+           exit={{ opacity: 0, scale: 0.9 }}
+           className={cn(
+             "pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border backdrop-blur-md min-w-[300px]",
+             toast.type === 'success' ? "bg-emerald-50/90 text-emerald-800 border-emerald-200" :
+             toast.type === 'error' ? "bg-rose-50/90 text-rose-800 border-rose-200" :
+             "bg-slate-800/90 text-slate-100 border-slate-700"
+           )}
+        >
+           {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500" /> :
+            toast.type === 'error' ? <AlertTriangle className="w-5 h-5 shrink-0 text-rose-500" /> :
+            <Info className="w-5 h-5 shrink-0 text-slate-400" />}
+           <div className="flex-1 text-sm font-medium">{toast.message}</div>
+           <button onClick={() => removeToast(toast.id)} className="p-1 hover:bg-black/5 rounded bg-transparent transition-colors">
+              <X className="w-4 h-4 opacity-50" />
+           </button>
+        </motion.div>
+      ))}
+    </AnimatePresence>
+  </div>
+);
 
-const PASTURE_ZONES = [
-    { name: 'Northern Grazing Planning Zone', status: 'Optimal', biomass: '4.2 ton/ha', alerts: 0 },
-    { name: 'Hadejia Wetlands Planning Zone', status: 'Needs Review', biomass: '1.8 ton/ha', alerts: 2 },
-    { name: 'Dutse Range Planning Zone', status: 'Needs Visit', biomass: '0.9 ton/ha', alerts: 5 },
-];
-
-const FIELD_OFFICERS = [
-  { id: 'FO-001', name: "Malam Yusuf", lga: "Hadejia", status: "Active", verifications: 145, lastActive: "10 mins ago", phone: "+234 802 123 4567" },
-  { id: 'FO-002', name: "Hajia Fatima", lga: "Dutse", status: "Active", verifications: 98, lastActive: "1 hour ago", phone: "+234 803 987 6543" },
-  { id: 'FO-003', name: "Ibrahim Sani", lga: "Kazaure", status: "Offline", verifications: 210, lastActive: "2 days ago", phone: "+234 806 555 1212" },
-  { id: 'FO-004', name: "Aliyu Bello", lga: "Gumel", status: "Active", verifications: 67, lastActive: "5 mins ago", phone: "+234 809 111 2222" },
-  { id: 'FO-005', name: "Zainab Umar", lga: "Ringim", status: "On Leave", verifications: 0, lastActive: "1 week ago", phone: "+234 810 333 4444" },
-];
+// Generic Modal
+const Modal = ({ isOpen, onClose, title, children, maxWidth = "max-w-md" }) => (
+  <AnimatePresence>
+    {isOpen && (
+      <>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+        />
+        <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className={cn("fixed z-[70] bg-white rounded-2xl shadow-2xl w-full max-h-[90vh] overflow-hidden flex flex-col top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2", maxWidth)}
+        >
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="font-bold text-lg text-slate-800">{title}</h3>
+                <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-6">
+                {children}
+            </div>
+        </motion.div>
+      </>
+    )}
+  </AnimatePresence>
+);
 
 // --- Components ---
 
@@ -203,14 +257,15 @@ const StatCard = ({ label, value, trend, trendUp, icon: Icon, color }) => (
 );
 
 const WarRoomMap = ({ activeLayer }) => {
+  const { t } = useTranslation();
   const center = [12.1800, 9.5300]; // Jigawa center approx
 
   // Mock data points
   const zones = [
-    { id: 'A', lat: 12.35, lng: 9.30, vegetation: 98, pasture: 'High', flood: 'Safe', pollution: 'Low' },
-    { id: 'B', lat: 11.95, lng: 9.90, vegetation: 85, pasture: 'Mod', flood: 'Risk', pollution: 'Med' },
-    { id: 'C', lat: 12.45, lng: 9.80, vegetation: 92, pasture: 'Low', flood: 'Safe', pollution: 'High' },
-    { id: 'D', lat: 12.10, lng: 9.20, vegetation: 75, pasture: 'High', flood: 'Risk', pollution: 'Low' },
+    { id: 'A', lat: 12.35, lng: 9.30, vegetation: 98, pasture: t('high'), flood: t('safe'), pollution: t('low') },
+    { id: 'B', lat: 11.95, lng: 9.90, vegetation: 85, pasture: t('average'), flood: t('risk'), pollution: t('average') },
+    { id: 'C', lat: 12.45, lng: 9.80, vegetation: 92, pasture: t('low'), flood: t('safe'), pollution: t('high') },
+    { id: 'D', lat: 12.10, lng: 9.20, vegetation: 75, pasture: t('high'), flood: t('risk'), pollution: t('low') },
   ];
 
   const getColor = (layer) => {
@@ -253,7 +308,7 @@ const WarRoomMap = ({ activeLayer }) => {
             >
               <LeafletTooltip direction="top" offset={[0, -20]} opacity={1} permanent>
                  <div className="bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold shadow-sm whitespace-nowrap text-slate-800 border border-slate-200">
-                    Planning Zone {zone.id}: {activeLayer === 'vegetation' ? `${zone.vegetation}% Yield` : activeLayer === 'pasture' ? zone.pasture : activeLayer === 'flood' ? zone.flood : zone.pollution}
+                    {t('planning_zone')} {zone.id}: {activeLayer === 'vegetation' ? `${zone.vegetation}% ${t('yield')}` : activeLayer === 'pasture' ? zone.pasture : activeLayer === 'flood' ? zone.flood : zone.pollution}
                  </div>
               </LeafletTooltip>
             </CircleMarker>
@@ -274,7 +329,7 @@ const WarRoomMap = ({ activeLayer }) => {
               <div className={cn("w-2 h-2 rounded-full animate-pulse", 
                  activeLayer === 'vegetation' ? "bg-emerald-400" : activeLayer === 'pasture' ? "bg-yellow-400" : activeLayer === 'flood' ? "bg-sky-400" : "bg-rose-400"
               )}/>
-              LIVE: {activeLayer}
+              {t('live_label')}: {activeLayer.toUpperCase()}
            </div>
        </div>
     </div>
@@ -284,14 +339,47 @@ const WarRoomMap = ({ activeLayer }) => {
 // --- App Component ---
 
 export default function App() {
-  const [farmers, setFarmers] = useState(INITIAL_FARMERS);
+  const { t, i18n } = useTranslation();
+
+  const {
+    cropHealthData,
+    marketData,
+    anomalies,
+    distributionLedger,
+    seasonalIntelligence,
+    warehouseStock,
+    initialFarmers,
+    livestockRegistry,
+    vaccineData,
+    pastureZones,
+    fieldOfficers: initialOfficers
+  } = getMockData(t);
+
+  const [farmers, setFarmers] = useState(initialFarmers);
+  const [officers, setOfficers] = useState(initialOfficers);
   const [activeView, setActiveView] = useState('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [mapLayer, setMapLayer] = useState('vegetation');
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
-  const [localMessages, setLocalMessages] = useState(messages);
+  const [localMessages, setLocalMessages] = useState([
+    { id: 1, sender: 'bot', text: t('jamis_ai_intro') },
+  ]);
   const [selectedFarmerId, setSelectedFarmerId] = useState(null);
+
+  // Global UI State
+  const [toasts, setToasts] = useState([]);
+  const [modal, setModal] = useState({ isOpen: false, title: '', content: null, maxWidth: 'max-w-md' });
+
+  const addToast = (message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  };
+  const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+
+  const openModal = (title, content, maxWidth = "max-w-md") => setModal({ isOpen: true, title, content, maxWidth });
+  const closeModal = () => setModal({ ...modal, isOpen: false });
   
   // Filter states
   const [filterLga, setFilterLga] = useState('All');
@@ -311,17 +399,34 @@ export default function App() {
   const handleSendMessage = () => {
     if (!chatInput.trim()) return;
     const newMsg = { id: Date.now(), sender: 'user', text: chatInput };
-    setLocalMessages([...localMessages, newMsg]);
+    setLocalMessages(prev => [...prev, newMsg]);
     setChatInput('');
     
-    // Mock Response
+    // Improved Mock Response logic
     setTimeout(() => {
+        let responseText = "Processing request...";
+        const lowerInput = chatInput.toLowerCase();
+        
+        if (lowerInput.includes('weather') || lowerInput.includes('rain') || lowerInput.includes('climate')) {
+             responseText = "Jigawa Climate Watch: Current conditions are optimal for drying. Slight chance of scattered rain in Southern Zones (Birnin Kudu) within 72 hours. Wind speeds: 12km/h NE.";
+        } else if (lowerInput.includes('yield') || lowerInput.includes('production') || lowerInput.includes('harvest')) {
+             responseText = "Yield Analysis: Rice production in Hadejia-Nguru wetlands is up 15% YoY. Total estimated harvest: 14,230 MT. Sorghum yields in Gumel are stable.";
+        } else if (lowerInput.includes('farmer') || lowerInput.includes('register') || lowerInput.includes('people')) {
+             responseText = "Registry Update: 1,402 Active farmers. 12 Flagged profiles require verification. Recent enrollments picked up in Dutse LGA (+45 this week).";
+        } else if (lowerInput.includes('price') || lowerInput.includes('market') || lowerInput.includes('cost')) {
+             responseText = "Market Intelligence: Maize prices in Jigawa are currently 8% lower than the National Average, suggesting a surplus. Recommendation: Consider warehouse storage to await price correction.";
+        } else if (lowerInput.includes('pest') || lowerInput.includes('disease') || lowerInput.includes('health')) {
+             responseText = "Health Alert: Minor reports of Stem Borer in Zone B. Field officers have been notified. Recommended action: 15% increase in pesticide distribution to affected wards.";
+        } else {
+             responseText = "I can access the JAMIS database. Try asking about 'weather forecasts', 'crop yields', 'market prices', 'farmer stats', or 'pest alerts'.";
+        }
+
         setLocalMessages(prev => [...prev, {
             id: Date.now() + 1,
             sender: 'bot',
-            text: "Searching the agricultural database... Analysis of Hadejia LGA yield data indicates a 15% increase in rice production compared to the previous fiscal year. Would you like a detailed PDF report generated for the Ministry?"
+            text: responseText
         }]);
-    }, 1500);
+    }, 1000);
   };
 
   const RegistrationForm = () => {
@@ -339,7 +444,7 @@ export default function App() {
 
     const handleRegister = () => {
         if (!formData.name || !formData.lga || !formData.farmSize) {
-            alert("Please fill in Name, LGA and Farm Size");
+            addToast("Please fill in Name, LGA and Farm Size", "error");
             return;
         }
 
@@ -357,15 +462,22 @@ export default function App() {
         };
         
         setFarmers([newFarmer, ...farmers]);
-        alert(`Farmer ${newFarmer.name} registered successfully!`);
+        addToast(`Farmer ${newFarmer.name} registered successfully!`, "success");
         setFormData({ name: '', nin: '', lga: '', farmSize: '', coordinates: '', locationDesc: '', crops: '', images: [] });
         setScanState('idle');
         setActiveView('farmers');
     };
 
     const getLocation = () => {
+        setFormData(prev => ({...prev, coordinates: "Locating..."}));
         // Simulation
-        setFormData({...formData, coordinates: "12.0456° N, 9.5567° E"}); 
+        setTimeout(() => {
+           // Randomize slightly around Jigawa center (approx 12N 9E)
+           const lat = (11.5 + Math.random() * 1.5).toFixed(4);
+           const lng = (9.0 + Math.random() * 1.5).toFixed(4);
+           setFormData(prev => ({...prev, coordinates: `${lat}° N, ${lng}° E`}));
+           addToast("GPS Coordinates Acquired", "success");
+        }, 1200);
     };
 
     const handleImageUpload = (e) => {
@@ -382,19 +494,19 @@ export default function App() {
     return (
       <div className="max-w-5xl mx-auto">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-800">
-            <ScanFace className="text-emerald-600" /> New Farmer Registration
+            <ScanFace className="text-emerald-600" /> {t('new_farmer_reg')}
         </h2>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
                 <Card className="space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <h3 className="font-semibold text-lg text-slate-800">Personal Information</h3>
-                        <span className="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">Step 1 of 3</span>
+                        <h3 className="font-semibold text-lg text-slate-800">{t('personal_info')}</h3>
+                        <span className="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">{t('step_1_3')}</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-slate-500 mb-1">Full Name *</label>
+                            <label className="block text-sm font-medium text-slate-500 mb-1">{t('full_name')} *</label>
                             <input 
                                 value={formData.name}
                                 onChange={e => setFormData({...formData, name: e.target.value})}
@@ -404,7 +516,7 @@ export default function App() {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-500 mb-1 flex items-center gap-1">
-                                NIN / BVN <span className="text-slate-400 text-xs">(Optional)</span>
+                                {t('nin_bvn')} <span className="text-slate-400 text-xs">({t('optional')})</span>
                                 <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-100 text-slate-400 text-[10px] cursor-help" title="Optional: Used only for data accuracy and identity verification">
                                     ?
                                 </span>
@@ -418,13 +530,13 @@ export default function App() {
                             <p className="text-[10px] text-slate-400 mt-1">For data accuracy only – not required for registration.</p>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-500 mb-1">LGA / Ward</label>
+                            <label className="block text-sm font-medium text-slate-500 mb-1">{t('lga_ward')}</label>
                             <select 
                                 value={formData.lga}
                                 onChange={e => setFormData({...formData, lga: e.target.value})}
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                             >
-                                <option value="">Select LGA</option>
+                                <option value="">{t('select_lga')}</option>
                                 {JIGAWA_LGAS.map(lga => (
                                     <option key={lga} value={lga}>{lga}</option>
                                 ))}
@@ -435,12 +547,12 @@ export default function App() {
 
                 <Card className="space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <h3 className="font-semibold text-lg text-slate-800">Farm Details</h3>
-                        <span className="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">Step 2 of 3</span>
+                        <h3 className="font-semibold text-lg text-slate-800">{t('farm_details')}</h3>
+                        <span className="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">{t('step_2_3')}</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-500 mb-1">Farm Size (Hectares)</label>
+                            <label className="block text-sm font-medium text-slate-500 mb-1">{t('farm_size')}</label>
                             <input 
                                 type="number"
                                 value={formData.farmSize}
@@ -450,7 +562,7 @@ export default function App() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-500 mb-1">Primary Crop</label>
+                            <label className="block text-sm font-medium text-slate-500 mb-1">{t('primary_crop')}</label>
                             <input 
                                 value={formData.crops}
                                 onChange={e => setFormData({...formData, crops: e.target.value})}
@@ -467,7 +579,7 @@ export default function App() {
                             </datalist>
                         </div>
                         <div className="md:col-span-2">
-                             <label className="block text-sm font-medium text-slate-500 mb-1">GPS Coordinates</label>
+                             <label className="block text-sm font-medium text-slate-500 mb-1">{t('gps_coords')}</label>
                              <div className="flex gap-2">
                                 <input 
                                     value={formData.coordinates}
@@ -479,12 +591,12 @@ export default function App() {
                                     onClick={getLocation}
                                     className="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-100 flex items-center gap-2 transition-colors"
                                 >
-                                    <MapPin className="w-4 h-4" /> Get Location
+                                    <MapPin className="w-4 h-4" /> {t('get_location')}
                                 </button>
                              </div>
                         </div>
                          <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-slate-500 mb-1">Farm Location Description</label>
+                            <label className="block text-sm font-medium text-slate-500 mb-1">{t('location_desc')}</label>
                             <textarea
                                 value={formData.locationDesc}
                                 onChange={e => setFormData({...formData, locationDesc: e.target.value})}
@@ -494,13 +606,13 @@ export default function App() {
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-slate-500 mb-1">Land Images</label>
+                            <label className="block text-sm font-medium text-slate-500 mb-1">{t('land_images')}</label>
                             <div 
                                 onClick={() => document.getElementById('imageInput').click()}
                                 className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 hover:border-emerald-300 transition-colors cursor-pointer"
                             >
                                 <Camera className="w-8 h-8 mb-2" />
-                                <span className="text-sm">Click to upload or take photo</span>
+                                <span className="text-sm">{t('upload_photo_prompt')}</span>
                                 <input 
                                     id="imageInput"
                                     type="file" 
@@ -527,7 +639,7 @@ export default function App() {
             <div className="lg:col-span-1">
                 <Card className="flex flex-col items-center justify-center text-center space-y-4 bg-slate-50/50 sticky top-6">
                     <div className="w-full flex justify-end mb-2">
-                        <span className="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">Step 3 of 3</span>
+                        <span className="text-xs font-medium px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">{t('step_3_3')}</span>
                     </div>
                     <div className="relative w-32 h-32 bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-slate-200 shadow-inner">
                         {scanState === 'idle' && <ScanFace className="w-12 h-12 text-slate-400" />}
@@ -545,8 +657,8 @@ export default function App() {
                         {scanState === 'complete' && <CheckCircle2 className="w-16 h-16 text-emerald-500" />}
                     </div>
                     <div>
-                        <h3 className="font-semibold text-slate-800">Biometric Verification <span className="text-slate-400 text-xs font-normal">(Optional)</span></h3>
-                        <p className="text-xs text-slate-500 mt-1">AI Face Match + Liveness Check</p>
+                        <h3 className="font-semibold text-slate-800">{t('biometric_verification')} <span className="text-slate-400 text-xs font-normal">({t('optional')})</span></h3>
+                        <p className="text-xs text-slate-500 mt-1">{t('face_match_check')}</p>
                         <p className="text-[10px] text-slate-400 mt-1">Optional: Used for data accuracy only.</p>
                     </div>
                     <button 
@@ -554,7 +666,7 @@ export default function App() {
                         disabled={scanState !== 'idle'}
                         className="w-full px-4 py-2 bg-white hover:bg-slate-50 rounded-lg text-sm border border-slate-200 text-slate-700 transition-colors disabled:opacity-50 shadow-sm"
                     >
-                        {scanState === 'idle' ? 'Start Scan' : scanState === 'scanning' ? 'Scanning...' : 'Verified'}
+                        {scanState === 'idle' ? t('start_scan') : scanState === 'scanning' ? t('scanning') : t('verified')}
                     </button>
                     
                     <div className="w-full pt-6 border-t border-slate-200 mt-6">
@@ -562,7 +674,7 @@ export default function App() {
                             onClick={handleRegister}
                             className="w-full px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
                         >
-                            Complete Registration <Send className="w-4 h-4" />
+                            {t('complete_reg')} <Send className="w-4 h-4" />
                         </button>
                     </div>
                 </Card>
@@ -587,8 +699,8 @@ export default function App() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Farmers Directory</h2>
-                    <p className="text-slate-500">Manage and monitor farmer performance</p>
+                    <h2 className="text-2xl font-bold text-slate-800">{t('farmers_directory')}</h2>
+                    <p className="text-slate-500">{t('manage_farmers')}</p>
                 </div>
                 {/* Filters */}
                 <div className="flex flex-wrap gap-2">
@@ -596,19 +708,19 @@ export default function App() {
                         value={filterLga} onChange={e => setFilterLga(e.target.value)}
                         className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5"
                     >
-                        {uniqueLgas.map(l => <option key={l} value={l}>{l === 'All' ? 'All LGAs' : l}</option>)}
+                        {uniqueLgas.map(l => <option key={l} value={l}>{l === 'All' ? t('filter_lga') : l}</option>)}
                     </select>
                     <select 
                         value={filterCrop} onChange={e => setFilterCrop(e.target.value)}
                         className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5"
                     >
-                        {uniqueCrops.map(c => <option key={c} value={c}>{c === 'All' ? 'All Crops' : c}</option>)}
+                        {uniqueCrops.map(c => <option key={c} value={c}>{c === 'All' ? t('filter_crop') : c}</option>)}
                     </select>
                     <select 
                         value={filterPerf} onChange={e => setFilterPerf(e.target.value)}
                         className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2.5"
                     >
-                        {uniquePerf.map(p => <option key={p} value={p}>{p === 'All' ? 'All Performance' : p}</option>)}
+                        {uniquePerf.map(p => <option key={p} value={p}>{p === 'All' ? t('filter_perf') : p}</option>)}
                     </select>
                     <button className="p-2.5 bg-slate-100 rounded-lg text-slate-500 hover:bg-slate-200">
                         <Filter className="w-4 h-4" />
@@ -670,7 +782,7 @@ export default function App() {
             onClick={() => setActiveView('farmers')}
             className="flex items-center gap-2 text-sm text-slate-500 hover:text-emerald-600 px-3 py-1.5 rounded-lg hover:bg-emerald-50 transition-colors mb-2"
         >
-            <ArrowLeft className="w-4 h-4" /> Back to Farmers List
+            <ArrowLeft className="w-4 h-4" /> {t('back_to_list')}
         </button>
 
         <div className="flex items-center gap-3 mb-6">
@@ -678,8 +790,8 @@ export default function App() {
              <Smartphone className="w-8 h-8 text-emerald-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-slate-800">Farmer Experience Portal</h2>
-            <p className="text-slate-500">Live View for: <span className="font-semibold text-emerald-600">{farmer.name}</span></p>
+            <h2 className="text-2xl font-bold text-slate-800">{t('farmer_exp_portal')}</h2>
+            <p className="text-slate-500">{t('live_view_for')} <span className="font-semibold text-emerald-600">{farmer.name}</span></p>
           </div>
         </div>
 
@@ -693,9 +805,9 @@ export default function App() {
                         <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
                             <Leaf className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-bold tracking-wider">JAMIS ID</span>
+                        <span className="font-bold tracking-wider">{t('jamis_id')}</span>
                     </div>
-                    <div className="px-2 py-1 bg-white/20 backdrop-blur rounded text-xs font-mono">VERIFIED</div>
+                    <div className="px-2 py-1 bg-white/20 backdrop-blur rounded text-xs font-mono">{t('verified')}</div>
                 </div>
 
                 <div className="flex gap-6 relative z-10">
@@ -716,8 +828,8 @@ export default function App() {
 
                 <div className="mt-8 flex justify-between items-end relative z-10">
                     <div className="text-[10px] text-emerald-200/80 space-y-1">
-                        <p>ISSUED BY JIGAWA STATE GOVT</p>
-                        <p>VALID UNTIL: DEC 2028</p>
+                        <p>{t('issued_by')}</p>
+                        <p>{t('valid_until')}</p>
                     </div>
                     <div className="bg-white p-2 rounded-lg">
                         <QrCode className="w-12 h-12 text-slate-900" />
@@ -728,7 +840,7 @@ export default function App() {
             {/* Input Request Tracker */}
             <Card className="h-full relative overflow-hidden">
                 <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                    <Package className="w-5 h-5 text-emerald-600" /> Input Allocation Status
+                    <Package className="w-5 h-5 text-emerald-600" /> {t('input_alloc_status')}
                 </h3>
                 
                 <div className="relative pl-4 space-y-8 before:absolute before:left-[27px] before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
@@ -738,7 +850,7 @@ export default function App() {
                             <CheckCircle2 className="w-4 h-4 text-white" />
                         </div>
                         <div>
-                            <h4 className="font-semibold text-slate-800 text-sm">Request Submitted</h4>
+                            <h4 className="font-semibold text-slate-800 text-sm">{t('req_submitted')}</h4>
                             <p className="text-xs text-slate-500 mt-0.5">NPK fertilizer (5 bags) & {farmer.crop} Seeds</p>
                             <span className="text-[10px] font-mono text-slate-400">Jan 12, 09:30 AM</span>
                         </div>
@@ -749,7 +861,7 @@ export default function App() {
                             <CheckCircle2 className="w-4 h-4 text-white" />
                         </div>
                         <div>
-                            <h4 className="font-semibold text-slate-800 text-sm">Approvals Cleared</h4>
+                            <h4 className="font-semibold text-slate-800 text-sm">{t('approvals_cleared')}</h4>
                             <p className="text-xs text-slate-500 mt-0.5">Ward Officer & Cooperative Lead signed off</p>
                             <span className="text-[10px] font-mono text-slate-400">Jan 14, 02:15 PM</span>
                         </div>
@@ -760,7 +872,7 @@ export default function App() {
                         </div>
                         <div className="bg-amber-50 p-3 rounded-lg border border-amber-100 -mt-2 w-full">
                             <h4 className="font-semibold text-amber-800 text-sm flex items-center gap-2">
-                                <Clock className="w-3 h-3" /> Ready for Pickup
+                                <Clock className="w-3 h-3" /> {t('ready_for_pickup')}
                             </h4>
                             <p className="text-xs text-amber-700 mt-1">
                                 Your allocation is ready at <strong>{farmer.lga} Central Depot</strong>. 
@@ -770,8 +882,34 @@ export default function App() {
                     </div>
                 </div>
 
-                <button className="mt-8 w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-medium transition-colors">
-                    View Allocation History
+                <button 
+                    onClick={() => openModal(t('view_alloc_history'), (
+                        <div className="space-y-4">
+                             <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-sm text-slate-600">
+                                 <p className="mb-1"><strong>Total Value Received (2023):</strong> ₦ 450,000</p>
+                                 <p><strong>Compliance Score:</strong> 98%</p>
+                             </div>
+                             <h4 className="font-bold text-slate-800 text-sm uppercase mt-4">Transaction Log</h4>
+                             <div className="space-y-2 max-h-60 overflow-y-auto">
+                                {[1,2,3].map(i => (
+                                    <div key={i} className="flex gap-3 p-3 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors">
+                                       <div className="shrink-0 pt-0.5"><CheckCircle2 className="w-4 h-4 text-emerald-500"/></div>
+                                       <div>
+                                           <div className="flex justify-between w-full gap-8">
+                                               <p className="font-semibold text-slate-700 text-sm">Disbursement #{4900 + i}</p>
+                                               <span className="text-xs font-mono text-slate-400">12 Jun '23</span>
+                                           </div>
+                                           <p className="text-xs text-slate-500 mt-1">Item: Improved Sorghum Seeds (25kg) x 2</p>
+                                           <p className="text-[10px] text-emerald-600 mt-1">Verified by Agent FO-002</p>
+                                       </div>
+                                    </div>
+                                ))}
+                             </div>
+                        </div>
+                    ))}
+                    className="mt-8 w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-medium transition-colors"
+                >
+                    {t('view_alloc_history')}
                 </button>
             </Card>
         </div>
@@ -790,22 +928,22 @@ export default function App() {
                     <Leaf className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                    <p className="text-sm text-slate-700"><strong>JAMIS</strong> helps the government plan, support farmers, and improve agriculture across Jigawa State.</p>
-                    <p className="text-[10px] text-slate-400 mt-1">All AI insights are for guidance only. Final decisions are made by field officers.</p>
+                    <p className="text-sm text-slate-700">{t('welcome_mission')}</p>
+                    <p className="text-[10px] text-slate-400 mt-1">{t('ai_disclaimer')}</p>
                 </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard label="Total Tonnage" value="14,230 MT" trend="+12%" trendUp={true} icon={Leaf} color="bg-emerald-500" />
-              <StatCard label="Warehouse Cap." value="82%" trend="-5%" trendUp={false} icon={LayoutDashboard} color="bg-indigo-500" />
-              <StatCard label="Active Farmers" value="1,402" trend="+84" trendUp={true} icon={Users} color="bg-blue-500" />
-              <StatCard label="Needs Attention" value="12" trend="+3" trendUp={false} icon={BrainCircuit} color="bg-amber-500" />
+              <StatCard label={t('total_tonnage')} value="14,230 MT" trend="+12%" trendUp={true} icon={Leaf} color="bg-emerald-500" />
+              <StatCard label={t('warehouse_cap')} value="82%" trend="-5%" trendUp={false} icon={LayoutDashboard} color="bg-indigo-500" />
+              <StatCard label={t('active_farmers')} value="1,402" trend="+84" trendUp={true} icon={Users} color="bg-blue-500" />
+              <StatCard label={t('needs_attention')} value="12" trend="+3" trendUp={false} icon={BrainCircuit} color="bg-amber-500" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-4">
                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2"><MapIcon className="w-5 h-5 text-emerald-600"/> Operational Map: Jigawa State</h2>
+                    <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-2"><MapIcon className="w-5 h-5 text-emerald-600"/> {t('operational_map')}</h2>
                     <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                         {['vegetation', 'flood', 'pollution'].map(l => (
                             <button
@@ -827,7 +965,7 @@ export default function App() {
               <div className="space-y-6">
                  <Card className="h-full">
                     <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-emerald-600"/> Crop Health (NDVI)
+                        <BarChart3 className="w-4 h-4 text-emerald-600"/> {t('crop_health_ndvi')}
                     </h3>
                     <div className="h-[200px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -852,7 +990,7 @@ export default function App() {
                     
                     <div className="mt-6">
                         <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                           <ShieldAlert className="w-4 h-4 text-rose-500"/> Audit Log
+                           <ShieldAlert className="w-4 h-4 text-rose-500"/> {t('audit_log')}
                         </h3>
                         <div className="bg-slate-50 rounded-xl p-2 h-[200px] overflow-y-auto space-y-2 border border-slate-100">
                             {anomalies.map(item => (
@@ -861,7 +999,7 @@ export default function App() {
                                     <div>
                                         <p className="text-sm text-slate-700 leading-tight font-medium">{item.msg}</p>
                                         <span className="text-[10px] text-slate-400 font-mono mt-1 block">{item.time}</span>
-                                        <span className="text-[9px] text-slate-400 italic">For guidance only. Final decision by field officers.</span>
+                                        <span className="text-[9px] text-slate-400 italic">{t('ai_disclaimer')}</span>
                                     </div>
                                 </div>
                             ))}
@@ -924,18 +1062,18 @@ export default function App() {
                     <div className="lg:col-span-2">
                          <div className="flex items-center justify-between mb-4">
                             <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                                <Footprints className="text-emerald-600"/> Livestock & Rangeland Monitor
+                                <Footprints className="text-emerald-600"/> {t('livestock_monitor')}
                             </h2>
                             <div className="flex gap-2 text-sm">
-                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded font-bold">Biomass: 1.2M Tons</span>
-                                <span className="px-2 py-1 bg-sky-100 text-sky-700 rounded font-bold">Vaccine Cov: 74%</span>
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded font-bold">{t('biomass')}: 1.2M Tons</span>
+                                <span className="px-2 py-1 bg-sky-100 text-sky-700 rounded font-bold">{t('vaccine_cov')}: 74%</span>
                             </div>
                          </div>
                          <Card className="h-[400px] p-0 overflow-hidden relative border-slate-200">
                              <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur p-2 rounded-lg shadow-sm">
                                 <h4 className="text-xs font-bold text-slate-500 uppercase">Pasture Biomass Map</h4>
                                 <div className="flex flex-col gap-1 mt-2">
-                                    {PASTURE_ZONES.map(z => (
+                                    {pastureZones.map(z => (
                                         <div key={z.name} className="flex items-center gap-2 text-xs">
                                             <div className={`w-2 h-2 rounded-full ${z.status === 'Optimal' ? 'bg-emerald-500' : z.status === 'Needs Review' ? 'bg-yellow-500' : 'bg-amber-500'}`} />
                                             <span className="text-slate-700">{z.name} ({z.biomass})</span>
@@ -951,7 +1089,7 @@ export default function App() {
                     <div className="space-y-6">
                         <Card className="items-start">
                             <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-3">
-                                <Activity className="w-5 h-5 text-emerald-500" /> Animal Health AI Insights
+                                <Activity className="w-5 h-5 text-emerald-500" /> {t('animal_health_ai')}
                                 <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-100 text-slate-400 text-[10px] cursor-help" title="AI analyzes sensor data to provide early signals for animal health">
                                     ?
                                 </span>
@@ -963,7 +1101,7 @@ export default function App() {
                                         <span className="text-[10px] text-amber-500">2m ago</span>
                                     </div>
                                     <p className="text-sm text-slate-700 font-medium">AI Insight: Possible respiratory change in Cattle herd (Zone A) – Needs Review for CBPP.</p>
-                                    <p className="text-[9px] text-slate-400 italic mt-1">For guidance only. Final decision by field officers.</p>
+                                    <p className="text-[9px] text-slate-400 italic mt-1">{t('ai_disclaimer')}</p>
                                 </div>
                                 <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
                                     <div className="flex justify-between items-start mb-1">
@@ -978,10 +1116,10 @@ export default function App() {
                         {/* Vaccine Tracker */}
                         <Card>
                              <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-                                <Syringe className="w-5 h-5 text-sky-500" /> Vax Tracker (FMD/PPR)
+                                <Syringe className="w-5 h-5 text-sky-500" /> {t('vax_tracker')}
                             </h3>
                             <div className="space-y-3">
-                                {VACCINE_DATA.slice(0, 3).map(d => (
+                                {vaccineData.slice(0, 3).map(d => (
                                     <div key={d.lga}>
                                         <div className="flex justify-between text-xs mb-1">
                                             <span className="font-medium text-slate-700">{d.lga}</span>
@@ -1001,19 +1139,19 @@ export default function App() {
                  <Card>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                             <Trees className="w-5 h-5 text-emerald-600" /> Livestock ID Registry
+                             <Trees className="w-5 h-5 text-emerald-600" /> {t('livestock_registry')}
                         </h3>
                         <div className="flex gap-2">
                             <select className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600">
-                                <option>Export by LGA</option>
-                                <option>Export by Type</option>
-                                <option>Export by Health</option>
-                                <option>Export by Date</option>
+                                <option>{t('export_by_lga')}</option>
+                                <option>{t('export_by_type')}</option>
+                                <option>{t('export_by_health')}</option>
+                                <option>{t('export_by_date')}</option>
                             </select>
-                            <button className="text-sm text-emerald-600 font-medium hover:underline px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100">Download Report</button>
+                            <button onClick={() => addToast("Report processing... Download will start shortly.", "success")} className="text-sm text-emerald-600 font-medium hover:underline px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100">{t('download_report')}</button>
                         </div>
                     </div>
-                    <p className="text-[10px] text-slate-400 italic mb-3">For guidance only. Final decision by field officers.</p>
+                    <p className="text-[10px] text-slate-400 italic mb-3">{t('ai_disclaimer')}</p>
                      <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-slate-600">
                             <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
@@ -1028,7 +1166,7 @@ export default function App() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {LIVESTOCK_REGISTRY.map(row => (
+                                {livestockRegistry.map(row => (
                                     <tr key={row.id} className="hover:bg-slate-50 group transition-colors">
                                         <td className="px-4 py-3 font-mono text-emerald-700 font-medium">{row.id}</td>
                                         <td className="px-4 py-3 text-slate-800 font-medium">
@@ -1037,18 +1175,54 @@ export default function App() {
                                         <td className="px-4 py-3">{row.owner}</td>
                                         <td className="px-4 py-3">{row.lga}</td>
                                         <td className="px-4 py-3">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                            <span className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
                                                 row.health === 'Healthy' ? 'bg-emerald-100 text-emerald-700' : 
                                                 row.health === 'Observed' ? 'bg-sky-100 text-sky-700' :
                                                 row.health === 'Needs Review' ? 'bg-yellow-100 text-yellow-700' : 
                                                 row.health === 'Urgent' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-700'
-                                            }`}>
+                                            )}>
                                                 {row.health}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">{row.lastVaccine}</td>
                                         <td className="px-4 py-3">
-                                            <button className="p-1 hover:bg-emerald-50 rounded text-emerald-600"><Stethoscope className="w-4 h-4"/></button>
+                                            <button 
+                                                onClick={() => openModal(`Medical Record: ${row.id}`, (
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                                                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-slate-200">
+                                                                <Footprints className="w-6 h-6 text-slate-400"/>
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800">{row.type} ({row.breed})</p>
+                                                                <p className="text-xs text-slate-500">Owner: {row.owner}</p>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="p-3 border border-slate-100 rounded-lg">
+                                                                <p className="text-xs text-slate-400 uppercase font-bold">Health Status</p>
+                                                                <p className="font-medium text-emerald-600">{row.health}</p>
+                                                            </div>
+                                                            <div className="p-3 border border-slate-100 rounded-lg">
+                                                                <p className="text-xs text-slate-400 uppercase font-bold">Next Vax Due</p>
+                                                                <p className="font-medium text-slate-700">Feb 15, 2024</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <h4 className="font-bold text-slate-700 text-xs uppercase mb-2">Clinical Notes</h4>
+                                                            <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                                <p>Animal appears in good condition. No visible signs of lesions or distress. Grazing habits normal.</p>
+                                                                <p className="text-xs text-slate-400 mt-2 text-right">- Dr. Amina K., Vet Officer</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                className="p-1 hover:bg-emerald-50 rounded text-emerald-600"
+                                            >
+                                                <Stethoscope className="w-4 h-4"/>
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -1062,7 +1236,7 @@ export default function App() {
         return (
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800"><Wind className="w-5 h-5 text-sky-500"/> Pollution Heatmap</h2>
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800"><Wind className="w-5 h-5 text-sky-500"/> {t('pollution_heatmap')}</h2>
                     <div className="h-[300px] bg-slate-900 rounded-xl relative overflow-hidden flex items-center justify-center border border-slate-200">
                         {/* Google Satellite Map */}
                         <iframe 
@@ -1098,12 +1272,12 @@ export default function App() {
                         
                         <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs text-amber-600 border border-amber-100 shadow-sm font-medium flex items-center gap-2">
                              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                             Possible High Nitrogen Activity – Needs Review
+                             {t('high_nitrogen_alert')}
                         </div>
                     </div>
                 </Card>
                 <Card>
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800"><Sprout className="w-5 h-5 text-emerald-600"/> Deforestation Tracking</h2>
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800"><Sprout className="w-5 h-5 text-emerald-600"/> {t('deforestation_tracking')}</h2>
                     <div className="h-[300px]">
                          <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={[
@@ -1132,18 +1306,18 @@ export default function App() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                            <Calendar className="text-indigo-600"/> AI Seasonal Planner
+                            <Calendar className="text-indigo-600"/> {t('ai_seasonal_planner')}
                         </h2>
-                        <p className="text-slate-500">Predictive Intelligence for agricultural planning</p>
+                        <p className="text-slate-500">{t('predictive_intel')}</p>
                     </div>
                     <div className="flex gap-2">
                         <select className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600">
-                            <option>All Activities</option>
-                            <option>Planting</option>
-                            <option>Grazing</option>
-                            <option>Harvesting</option>
+                            <option>{t('all_activities')}</option>
+                            <option>{t('planting')}</option>
+                            <option>{t('grazing')}</option>
+                            <option>{t('harvesting')}</option>
                         </select>
-                        <button className="text-sm text-indigo-600 font-medium px-3 py-1 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors">Download Calendar</button>
+                        <button onClick={() => addToast("Downloading 2024 Seasonal Calendar...", "success")} className="text-sm text-indigo-600 font-medium px-3 py-1 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors">{t('download_calendar')}</button>
                     </div>
                 </div>
                 
@@ -1153,15 +1327,15 @@ export default function App() {
                         <BrainCircuit className="w-5 h-5 text-indigo-600" />
                     </div>
                     <div>
-                        <p className="text-sm text-slate-700"><strong>AI-Powered Planning:</strong> Seasonal predictions based on satellite data, weather patterns, and historical trends to help planners and farmers optimize activities.</p>
-                        <p className="text-[10px] text-slate-400 mt-1">For guidance only. Final decisions by field officers and farmers.</p>
+                        <p className="text-sm text-slate-700">{t('ai_powered_planning')}</p>
+                        <p className="text-[10px] text-slate-400 mt-1">{t('ai_disclaimer')}</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Calendar Cards */}
                     <div className="lg:col-span-2 space-y-4">
-                        {SEASONAL_INTELLIGENCE.map((item, idx) => (
+                        {seasonalIntelligence.map((item, idx) => (
                             <Card key={idx} className="relative overflow-hidden group hover:border-indigo-300 transition-colors">
                                 <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", 
                                     item.status === 'Active' ? "bg-emerald-500" : 
@@ -1195,8 +1369,32 @@ export default function App() {
                                     </div>
                                     
                                     <div className="flex md:flex-col gap-2 md:items-end">
-                                        <button className="text-xs text-slate-500 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors">View Details</button>
-                                        <button className="text-xs text-indigo-600 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors">Set Reminder</button>
+                                        <button 
+                                            onClick={() => openModal(item.activity, (
+                                                <div className="space-y-4">
+                                                    <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                                                        <h4 className="font-bold text-indigo-900 mb-2">AI Recommendation</h4>
+                                                        <p className="text-sm text-indigo-800">
+                                                            Based on current soil moisture sensors in Zone A and B, optimal planting conditions will peak in 3 days. Mobilize tractor units to Hadejia sector immediately.
+                                                        </p>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="border p-3 rounded-lg">
+                                                            <p className="text-xs text-slate-500 uppercase font-bold">Resouces Needed</p>
+                                                            <p className="text-sm font-medium">Tractors, NPK 15:15:15</p>
+                                                        </div>
+                                                        <div className="border p-3 rounded-lg">
+                                                            <p className="text-xs text-slate-500 uppercase font-bold">Target Yield</p>
+                                                            <p className="text-sm font-medium">+12% vs last year</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            className="text-xs text-slate-500 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"
+                                        >
+                                            View Details
+                                        </button>
+                                        <button onClick={() => addToast("Reminder set for 09:00 AM tomorrow", "success")} className="text-xs text-indigo-600 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors">Set Reminder</button>
                                     </div>
                                 </div>
                             </Card>
@@ -1206,7 +1404,7 @@ export default function App() {
                         <Card className="border-dashed border-2 border-slate-200 bg-slate-50/50">
                             <div className="flex items-center justify-center gap-3 py-4 text-slate-400">
                                 <Calendar className="w-5 h-5" />
-                                <span className="text-sm font-medium">More seasonal activities loading from satellite data...</span>
+                                <span className="text-sm font-medium">{t('loading_seasonal')}</span>
                             </div>
                         </Card>
                     </div>
@@ -1266,7 +1464,7 @@ export default function App() {
                             <div className="flex items-start gap-2">
                                 <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-200 text-sky-700 text-[10px] shrink-0 mt-0.5">?</span>
                                 <div>
-                                    <p className="text-xs text-slate-600"><strong>How to use:</strong> Review activity windows and AI confidence levels. Plan field visits and resource allocation around predicted optimal periods.</p>
+                                    <p className="text-xs text-slate-600"><strong>{t('how_to_use')}</strong> {t('how_to_use_desc')}</p>
                                 </div>
                             </div>
                         </div>
@@ -1335,12 +1533,12 @@ export default function App() {
                     
                     <div className="mt-6 flex gap-2">
                         <select className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600">
-                            <option>Filter by User</option>
-                            <option>Filter by Action</option>
-                            <option>Filter by Date</option>
-                            <option>Filter by LGA</option>
+                            <option>{t('filter_by_user')}</option>
+                            <option>{t('filter_by_action')}</option>
+                            <option>{t('filter_by_date')}</option>
+                            <option>{t('filter_by_lga')}</option>
                         </select>
-                        <button className="text-sm text-emerald-600 font-medium hover:underline px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100">Export Audit Log</button>
+                        <button onClick={() => addToast("Exporting secure audit log...", "success")} className="text-sm text-emerald-600 font-medium hover:underline px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100">{t('export_audit_log')}</button>
                     </div>
                 </Card>
             </div>
@@ -1351,12 +1549,44 @@ export default function App() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                            <Users className="text-emerald-600"/> Field Officers
+                            <Users className="text-emerald-600"/> {t('field_officers')}
                         </h2>
                         <p className="text-slate-500 text-sm">Manage field agents and track verification activities.</p>
                     </div>
-                    <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center gap-2">
-                        <Users className="w-4 h-4"/> Add New Officer
+                    <button 
+                         onClick={() => {
+                            const handleSubmit = (e) => {
+                                e.preventDefault();
+                                const name = e.target.name.value;
+                                const lga = e.target.lga.value;
+                                const id = `FO-00${officers.length + 1}`;
+                                if(name && lga) {
+                                    setOfficers([...officers, {
+                                        id, name, lga, status: 'Active', verifications: 0, lastActive: 'Just now', phone: '+234...'
+                                    }]);
+                                    addToast(`Officer ${name} added successfully!`, "success");
+                                    closeModal();
+                                }
+                            };
+                            openModal(t('add_new_officer'), (
+                                <form onSubmit={handleSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">{t('full_name')}</label>
+                                        <input name="name" className="block w-full rounded-lg border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 px-3 py-2 border bg-slate-50 outline-none" required placeholder="e.g. Musa Ibrahim" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">{t('lga_assignment')}</label>
+                                        <select name="lga" className="block w-full rounded-lg border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 px-3 py-2 border bg-slate-50 outline-none">
+                                            {JIGAWA_LGAS.map(l => <option key={l} value={l}>{l}</option>)}
+                                        </select>
+                                    </div>
+                                    <button type="submit" className="w-full bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-lg shadow-emerald-500/20">{t('add_new_officer')}</button>
+                                </form>
+                            ));
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
+                    >
+                        <Users className="w-4 h-4"/> {t('add_new_officer')}
                     </button>
                 </div>
 
@@ -1367,8 +1597,8 @@ export default function App() {
                                 <Activity className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-slate-500 text-sm font-medium">Active Officers</p>
-                                <h3 className="text-2xl font-bold text-slate-800">142</h3>
+                                <p className="text-slate-500 text-sm font-medium">{t('active_officers')}</p>
+                                <h3 className="text-2xl font-bold text-slate-800">{officers.filter(o => o.status === 'Active').length}</h3>
                             </div>
                         </div>
                     </Card>
@@ -1378,7 +1608,7 @@ export default function App() {
                                 <ScanFace className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-slate-500 text-sm font-medium">Verifications Today</p>
+                                <p className="text-slate-500 text-sm font-medium">{t('verifications_today')}</p>
                                 <h3 className="text-2xl font-bold text-slate-800">1,240</h3>
                             </div>
                         </div>
@@ -1389,7 +1619,7 @@ export default function App() {
                                 <MapPin className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-slate-500 text-sm font-medium">LGA Coverage</p>
+                                <p className="text-slate-500 text-sm font-medium">{t('lga_coverage')}</p>
                                 <h3 className="text-2xl font-bold text-slate-800">27 / 27</h3>
                             </div>
                         </div>
@@ -1401,16 +1631,16 @@ export default function App() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-100 text-slate-500 text-sm">
-                                    <th className="py-3 px-4 font-medium">Officer</th>
-                                    <th className="py-3 px-4 font-medium">LGA / Assignment</th>
-                                    <th className="py-3 px-4 font-medium">Status</th>
-                                    <th className="py-3 px-4 font-medium">Verifications</th>
-                                    <th className="py-3 px-4 font-medium">Last Active</th>
-                                    <th className="py-3 px-4 font-medium">Actions</th>
+                                    <th className="py-3 px-4 font-medium">{t('officer')}</th>
+                                    <th className="py-3 px-4 font-medium">{t('lga_assignment')}</th>
+                                    <th className="py-3 px-4 font-medium">{t('status')}</th>
+                                    <th className="py-3 px-4 font-medium">{t('verifications')}</th>
+                                    <th className="py-3 px-4 font-medium">{t('last_active')}</th>
+                                    <th className="py-3 px-4 font-medium">{t('actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 text-sm">
-                                {FIELD_OFFICERS.map((officer) => (
+                                {officers.map((officer) => (
                                     <tr key={officer.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="py-3 px-4">
                                             <div className="flex items-center gap-3">
@@ -1446,7 +1676,20 @@ export default function App() {
                                             {officer.lastActive}
                                         </td>
                                         <td className="py-3 px-4">
-                                            <button className="text-indigo-600 hover:text-indigo-700 font-medium text-xs border border-indigo-100 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
+                                            <button 
+                                                onClick={() => openModal(`Activity Log: ${officer.name}`, (
+                                                    <div className="space-y-3">
+                                                        <p className="text-xs text-slate-500">Showing recent activity</p>
+                                                        {[1,2,3].map(i => (
+                                                            <div key={i} className="flex gap-3 text-sm border-l-2 border-slate-200 pl-3 py-1">
+                                                                <span className="text-slate-400 text-xs font-mono shrink-0">10:0{i} AM</span>
+                                                                <span className="text-slate-600">Verified farmer enrollment in {officer.lga} Ward {String.fromCharCode(65+i)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ))}
+                                                className="text-indigo-600 hover:text-indigo-700 font-medium text-xs border border-indigo-100 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
+                                            >
                                                 View Log
                                             </button>
                                         </td>
@@ -1466,17 +1709,19 @@ export default function App() {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="flex items-center justify-between">
                             <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                                <Truck className="text-emerald-600"/> Unified Distribution Ledger
+                                <Truck className="text-emerald-600"/> {t('unified_dist_ledger')}
                             </h2>
                             <div className="flex gap-2">
-                                <select className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600">
-                                    <option>Export by LGA</option>
-                                    <option>Export by Item</option>
-                                    <option>Export by Status</option>
-                                    <option>Export by Date</option>
+                                <select 
+                                    value={filterLga}
+                                    onChange={(e) => setFilterLga(e.target.value)}
+                                    className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600"
+                                >
+                                    <option value="All">{t('filter_lga')}</option>
+                                    {JIGAWA_LGAS.map(lga => <option key={lga} value={lga}>{lga}</option>)}
                                 </select>
-                                <button className="text-sm text-emerald-600 font-medium hover:underline flex items-center gap-1 px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100">
-                                    Download Report <ArrowLeft className="w-3 h-3 rotate-180" />
+                                <button onClick={() => addToast("Report Downloading...", "success")} className="text-sm text-emerald-600 font-medium hover:underline flex items-center gap-1 px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100">
+                                    {t('download_report')} <ArrowLeft className="w-3 h-3 rotate-180" />
                                 </button>
                             </div>
                         </div>
@@ -1484,15 +1729,18 @@ export default function App() {
                             <table className="w-full text-left text-sm text-slate-600">
                                 <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
                                     <tr>
-                                        <th className="px-4 py-3">Tracking ID</th>
-                                        <th className="px-4 py-3">LGA / Zone</th>
-                                        <th className="px-4 py-3">Item</th>
-                                        <th className="px-4 py-3">Dispatched / Received</th>
-                                        <th className="px-4 py-3">Status</th>
+                                        <th className="px-4 py-3">{t('tracking_id')}</th>
+                                        <th className="px-4 py-3">{t('lga_zone')}</th>
+                                        <th className="px-4 py-3">{t('item')}</th>
+                                        <th className="px-4 py-3">{t('dispatched_received')}</th>
+                                        <th className="px-4 py-3">{t('status')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {DISTRIBUTION_LEDGER.map(row => (
+                                    {distributionLedger.filter(row => filterLga === 'All' || row.lga === filterLga).length === 0 ? (
+                                        <tr><td colSpan="5" className="px-4 py-8 text-center text-slate-400">No records found for this filter</td></tr>
+                                    ) : (
+                                      distributionLedger.filter(row => filterLga === 'All' || row.lga === filterLga).map(row => (
                                         <tr key={row.id} className="hover:bg-slate-50 group transition-colors">
                                             <td className="px-4 py-3 font-mono text-xs text-slate-400">{row.id}</td>
                                             <td className="px-4 py-3 font-medium text-slate-800">{row.lga}</td>
@@ -1517,7 +1765,7 @@ export default function App() {
                                                 </span>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )))}
                                 </tbody>
                             </table>
                         </Card>
@@ -1525,10 +1773,10 @@ export default function App() {
                          {/* Warehouse Inventory */}
                         <div className="mt-8">
                              <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-                                <Warehouse className="w-5 h-5 text-indigo-500" /> State Warehouse Inventory
+                                <Warehouse className="w-5 h-5 text-indigo-500" /> {t('state_warehouse_inv')}
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {WAREHOUSE_STOCK.map(wh => (
+                                {warehouseStock.map(wh => (
                                     <div key={wh.name} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative overflow-hidden">
                                         <div className="absolute top-0 right-0 w-16 h-16 bg-slate-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
                                         <div className="relative z-10">
@@ -1564,13 +1812,13 @@ export default function App() {
                                     <Calendar className="w-5 h-5 text-emerald-600" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-slate-800">AI Seasonal Calendar</h3>
-                                    <p className="text-xs text-slate-500">Predictive Intelligence</p>
+                                    <h3 className="font-bold text-slate-800">{t('ai_seasonal_planner')}</h3>
+                                    <p className="text-xs text-slate-500">{t('predictive_intel')}</p>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                {SEASONAL_INTELLIGENCE.map((item, idx) => (
+                                {seasonalIntelligence.map((item, idx) => (
                                     <div key={idx} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition-colors">
                                         <div className={cn("absolute left-0 top-0 bottom-0 w-1", 
                                             item.status === 'Active' ? "bg-emerald-500" : 
@@ -1606,7 +1854,7 @@ export default function App() {
                                 <Satellite className="w-8 h-8 text-sky-500 shrink-0" />
                                 <div>
                                     <p className="text-xs text-sky-800 font-medium leading-tight">
-                                        Data sourced from Sentinel-2 Satellite & ground sensors in 4 Zones.
+                                        {t('data_sources')}: Sentinel-2 Satellite & ground sensors in 4 Zones.
                                     </p>
                                 </div>
                             </div>
@@ -1650,34 +1898,35 @@ export default function App() {
                     initial={{ opacity: 0 }} 
                     animate={{ opacity: 1 }} 
                     className="text-2xl font-black tracking-tighter text-slate-900 font-sans"
+                    title={t('app_subtitle')}
                 >
-                    JAMIS
+                    {t('app_title')}
                 </motion.h1>
-                <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold font-sans">by Romana Group</span>
+                <span className="text-[9px] uppercase tracking-widest text-slate-400 font-bold font-sans leading-tight block">{t('app_subtitle')}</span>
             </div>
           )}
         </div>
 
         <nav className="flex-1 px-4 space-y-2 py-4">
-           <SidebarItem icon={LayoutDashboard} label="Operations Center" active={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} collapsed={isSidebarCollapsed} />
-           <SidebarItem icon={ScanFace} label="Registration" active={activeView === 'registration'} onClick={() => setActiveView('registration')} collapsed={isSidebarCollapsed} />
-           <SidebarItem icon={Users} label="Farmers Directory" active={activeView === 'farmers' || activeView === 'farmer-detail'} onClick={() => setActiveView('farmers')} collapsed={isSidebarCollapsed} />
-           <SidebarItem icon={Footprints} label="Livestock & Range" active={activeView === 'livestock'} onClick={() => setActiveView('livestock')} collapsed={isSidebarCollapsed} />
-           <SidebarItem icon={BarChart3} label="Market Radar" active={activeView === 'market'} onClick={() => setActiveView('market')} collapsed={isSidebarCollapsed} />
-           <SidebarItem icon={Calendar} label="Seasonal Planner" active={activeView === 'seasonal'} onClick={() => setActiveView('seasonal')} collapsed={isSidebarCollapsed} />
-           <SidebarItem icon={Truck} label="Logistics & Inputs" active={activeView === 'logistics'} onClick={() => setActiveView('logistics')} collapsed={isSidebarCollapsed} />
-           <SidebarItem icon={Wind} label="Climate Monitor" active={activeView === 'climate'} onClick={() => setActiveView('climate')} collapsed={isSidebarCollapsed} />
-           <SidebarItem icon={ShieldAlert} label="Trust & Audit" active={activeView === 'audit'} onClick={() => setActiveView('audit')} collapsed={isSidebarCollapsed} />
-           <SidebarItem icon={ScanFace} label="Field Officers" active={activeView === 'officers'} onClick={() => setActiveView('officers')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={LayoutDashboard} label={t('operations_center')} active={activeView === 'dashboard'} onClick={() => setActiveView('dashboard')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={ScanFace} label={t('registration')} active={activeView === 'registration'} onClick={() => setActiveView('registration')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={Users} label={t('farmers_directory')} active={activeView === 'farmers' || activeView === 'farmer-detail'} onClick={() => setActiveView('farmers')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={Footprints} label={t('livestock_range')} active={activeView === 'livestock'} onClick={() => setActiveView('livestock')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={BarChart3} label={t('market_radar')} active={activeView === 'market'} onClick={() => setActiveView('market')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={Calendar} label={t('seasonal_planner')} active={activeView === 'seasonal'} onClick={() => setActiveView('seasonal')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={Truck} label={t('logistics_inputs')} active={activeView === 'logistics'} onClick={() => setActiveView('logistics')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={Wind} label={t('climate_monitor')} active={activeView === 'climate'} onClick={() => setActiveView('climate')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={ShieldAlert} label={t('trust_audit')} active={activeView === 'audit'} onClick={() => setActiveView('audit')} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={ScanFace} label={t('field_officers')} active={activeView === 'officers'} onClick={() => setActiveView('officers')} collapsed={isSidebarCollapsed} />
         </nav>
 
         <div className="p-4 border-t border-slate-100">
-           <SidebarItem icon={Settings} label="System Config" onClick={() => {}} collapsed={isSidebarCollapsed} />
+           <SidebarItem icon={Settings} label={t('system_config')} onClick={() => {}} collapsed={isSidebarCollapsed} />
            <button 
              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
              className="mt-2 w-full flex items-center justify-center p-2 text-slate-400 hover:text-slate-600 transition-colors"
            >
-              {isSidebarCollapsed ? <Menu className="w-5 h-5"/> : <div className="text-xs uppercase font-bold tracking-widest flex items-center gap-2"><div className="w-full h-px bg-slate-200"/> Collapse</div>}
+              {isSidebarCollapsed ? <Menu className="w-5 h-5"/> : <div className="text-xs uppercase font-bold tracking-widest flex items-center gap-2"><div className="w-full h-px bg-slate-200"/> {t('collapse')}</div>}
            </button>
         </div>
       </motion.aside>
@@ -1692,15 +1941,19 @@ export default function App() {
               <div className="w-4 h-4 bg-white rounded-full" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-xl font-black tracking-tighter text-slate-900">JAMIS</h1>
+              <h1 title={t('app_subtitle')} className="text-xl font-black tracking-tighter text-slate-900">{t('app_title')}</h1>
+               <span className="text-[8px] uppercase tracking-widest text-slate-400 font-bold font-sans leading-none">{t('app_subtitle')}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ha' : 'en')} className="text-xs text-emerald-600 font-bold hover:underline">
+              {i18n.language.toUpperCase()}
+            </button>
             <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200 rounded-full" title="AI assists with data analysis for planning support">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
               </span>
-              <span className="text-[10px] font-medium text-slate-500">AI Assist</span>
+              <span className="text-[10px] font-medium text-slate-500">{t('ai_assist')}</span>
             </div>
             <button className="relative p-2 text-slate-500 hover:text-emerald-600 transition-colors">
               <Bell className="w-5 h-5" />
@@ -1716,19 +1969,25 @@ export default function App() {
                   <span className="relative flex h-2 w-2">
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                   </span>
-                  <span className="text-xs font-medium text-slate-500">AI Assist Active</span>
+                  <span className="text-xs font-medium text-slate-500">{t('ai_assist_active')}</span>
               </div>
               <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-sky-50 border border-sky-100 rounded-full">
                   <Satellite className="w-3 h-3 text-sky-500" />
-                  <span className="text-xs font-semibold text-sky-700">SAT-LINK: OPTIMAL</span>
+                  <span className="text-xs font-semibold text-sky-700">{t('sat_link_optimal')}</span>
               </div>
            </div>
 
            <div className="flex items-center gap-4">
                <div className="relative hidden md:block">
                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                   <input type="text" placeholder="Search data, farms, IDs..." className="w-64 bg-slate-100 border border-slate-200 rounded-full pl-9 pr-4 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
+                   <input type="text" placeholder={t('search_placeholder')} className="w-64 bg-slate-100 border border-slate-200 rounded-full pl-9 pr-4 py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all" />
                </div>
+               <button 
+                  onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ha' : 'en')}
+                  className="text-xs text-emerald-600 font-bold hover:underline"
+               >
+                   {i18n.language.toUpperCase()}
+               </button>
                <button className="relative p-2 text-slate-500 hover:text-emerald-600 transition-colors">
                    <Bell className="w-5 h-5" />
                    <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
@@ -1753,7 +2012,7 @@ export default function App() {
              <div className="mt-16 py-8 border-t border-slate-200/60 flex flex-col items-center justify-center text-center opacity-70 hover:opacity-100 transition-opacity">
                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Romana Group</h4>
                 <p className="text-[10px] text-slate-400 font-medium tracking-wide bg-white/50 px-3 py-1 rounded-full border border-slate-100">
-                    Presented by: <span className="text-emerald-700 font-bold">Ibrahim Babangida kani</span> • <span className="font-mono text-xs">+234 803 680 2214</span>
+                    {t('presented_by')} <span className="text-emerald-700 font-bold">Ibrahim Babangida kani</span> • <span className="font-mono text-xs">+234 803 680 2214</span>
                 </p>
              </div>
            </div>
@@ -1771,7 +2030,7 @@ export default function App() {
                     <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-emerald-50">
                         <div className="flex items-center gap-2">
                             <BrainCircuit className="w-5 h-5 text-emerald-600" />
-                            <h3 className="font-semibold text-slate-800">JAMIS AI</h3>
+                            <h3 className="font-semibold text-slate-800">{t('jamis_ai')}</h3>
                         </div>
                         <button onClick={() => setChatOpen(false)} className="p-2 hover:bg-emerald-100 rounded-lg text-slate-400 hover:text-slate-700 transition-colors"><X className="w-5 h-5"/></button>
                     </div>
@@ -1793,7 +2052,7 @@ export default function App() {
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder="Query aggregate data..." 
+                                placeholder={t('query_placeholder')} 
                                 className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none" 
                             />
                             <button onClick={handleSendMessage} className="p-2 bg-emerald-600 rounded-xl hover:bg-emerald-700 text-white shadow-sm"><Send className="w-4 h-4"/></button>
@@ -1808,7 +2067,7 @@ export default function App() {
             className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 px-5 h-12 lg:h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg shadow-emerald-500/30 z-40 transition-transform hover:scale-105 flex items-center gap-2"
         >   
             <MessageSquare className="w-5 h-5 lg:w-6 lg:h-6" /> 
-            <span className="font-bold text-sm sm:text-base">JAMIS AI</span>
+            <span className="font-bold text-sm sm:text-base">{t('jamis_ai')}</span>
         </button>
 
         {/* Mobile Bottom Navigation */}
@@ -1905,6 +2164,16 @@ export default function App() {
         </nav>
 
       </main>
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <Modal 
+        isOpen={modal.isOpen} 
+        onClose={closeModal} 
+        title={modal.title} 
+        maxWidth={modal.maxWidth}
+      >
+        {modal.content}
+      </Modal>
     </div>
   );
 }
