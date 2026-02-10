@@ -1,4 +1,4 @@
-# How to Deploy JAMIS to Vercel
+# How to Deploy KAMIS to Vercel
 
 This repository contains two distinct applications that should be deployed as separate projects on Vercel.
 
@@ -14,13 +14,13 @@ This repository contains two distinct applications that should be deployed as se
     *   **Output Directory**: `dist` (default).
 5.  Click **Deploy**.
 
-## 2. Deploy JAMIS Admin (jamis-proto)
+## 2. Deploy KAMIS Admin (kamis-proto)
 
 1.  Go back to your [Vercel Dashboard](https://vercel.com/dashboard).
 2.  Click **"Add New..."** -> **"Project"** (again).
 3.  Import the **same** Git repository again.
 4.  In the **Configure Project** step:
-    *   **Root Directory**: Click "Edit" and select `jamis-proto`.
+    *   **Root Directory**: Click "Edit" and select `kamis-proto`.
     *   **Framework Preset**: It should auto-detect "Vite".
     *   **Build Command**: `npm run build` (default).
     *   **Output Directory**: `dist` (default).

@@ -120,7 +120,7 @@ const WarRoomMap = ({ activeLayer }) => {
       {/* Grid Background Mock */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20" />
       
-      {/* Stylized Jigawa Shape (Abstract SVG) */}
+      {/* Stylized Kogi Shape (Abstract SVG) */}
       <div className="absolute inset-0 flex items-center justify-center p-10">
         <svg viewBox="0 0 400 300" className="w-full h-full drop-shadow-[0_0_15px_rgba(16,185,129,0.2)]">
           <motion.path 
@@ -307,7 +307,7 @@ export default function App() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-4">
                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-slate-200 flex items-center gap-2"><MapIcon className="w-5 h-5 text-emerald-400"/> Operational Map: Jigawa State</h2>
+                    <h2 className="text-xl font-semibold text-slate-200 flex items-center gap-2"><MapIcon className="w-5 h-5 text-emerald-400"/> Operational Map: Kogi State</h2>
                     <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
                         {['vegetation', 'flood', 'pollution'].map(l => (
                             <button
@@ -382,10 +382,10 @@ export default function App() {
                     <div className="flex justify-between items-center mb-6">
                         <div>
                          <h2 className="text-xl font-bold">Market Price Radar</h2>
-                         <p className="text-slate-400 text-sm">Comparing local Jigawa markets vs National Index</p>
+                         <p className="text-slate-400 text-sm">Comparing local Kogi markets vs National Index</p>
                         </div>
                         <div className="flex gap-2">
-                             <div className="flex items-center gap-2 text-sm text-slate-400"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> Jigawa</div>
+                             <div className="flex items-center gap-2 text-sm text-slate-400"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> Kogi</div>
                              <div className="flex items-center gap-2 text-sm text-slate-400"><div className="w-3 h-3 rounded-full bg-sky-500"></div> National</div>
                         </div>
                     </div>
@@ -396,7 +396,7 @@ export default function App() {
                             <PolarGrid stroke="#334155" />
                             <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                             <PolarRadiusAxis angle={30} domain={[0, 150]} stroke="#475569" />
-                            <Radar name="Jigawa" dataKey="A" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.3} />
+                            <Radar name="Kogi" dataKey="A" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.3} />
                             <Radar name="National" dataKey="B" stroke="#0ea5e9" strokeWidth={2} fill="#0ea5e9" fillOpacity={0.3} />
                             <ReTooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155' }} itemStyle={{ color: '#fff' }} />
                             <Legend />
@@ -471,7 +471,7 @@ export default function App() {
                 animate={{ opacity: 1 }} 
                 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent"
             >
-                JAMIS <span className="text-emerald-500">2.0</span>
+                KAMIS <span className="text-emerald-500">2.0</span>
             </motion.h1>
           )}
         </div>

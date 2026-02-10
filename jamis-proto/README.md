@@ -1,6 +1,6 @@
-# JAMIS 2.0 Prototype
+# KAMIS 2.0 Prototype
 
-High-fidelity React prototype for the Jigawa Agricultural Management Information System.
+High-fidelity React prototype for the Kogi Agricultural Management Information System.
 
 ## Stack
 - Vite + React

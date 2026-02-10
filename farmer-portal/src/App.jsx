@@ -82,7 +82,7 @@ const Modal = ({ isOpen, onClose, title, children }) => (
 const AiAssistant = ({ isOpen, onClose, user }) => {
   const { t } = useTranslation();
   const [messages, setMessages] = useState([
-    { id: 1, type: 'bot', text: t('jamis_ai_intro') }
+    { id: 1, type: 'bot', text: t('kamis_ai_intro') }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -98,7 +98,7 @@ const AiAssistant = ({ isOpen, onClose, user }) => {
     setTimeout(() => {
         setIsTyping(false);
         const lowerInput = input.toLowerCase();
-        let response = t('jamis_ai_help');
+        let response = t('kamis_ai_help');
 
         if (lowerInput.includes('price') || lowerInput.includes('sell') || lowerInput.includes('market')) {
             response = `Current market insights show Rice (Paddy) is trending up by 2.4% in ${user?.lga || 'Hadejia'}. ${t('good_time_to_sell') || 'Good time to sell!'}`;
@@ -144,7 +144,7 @@ const AiAssistant = ({ isOpen, onClose, user }) => {
                         <Bot className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h3 className="font-bold">{t('jamis_ai')}</h3>
+                        <h3 className="font-bold">{t('kamis_ai')}</h3>
                         <p className="text-xs text-emerald-100 flex items-center gap-1">
                             <span className="w-2 h-2 rounded-full bg-green-300 animate-pulse"/> {t('online')}
                         </p>
@@ -211,7 +211,7 @@ const AiAssistant = ({ isOpen, onClose, user }) => {
 };
 
 
-const JIGAWA_LGAS = [
+const KOGI_LGAS = [
   "Dutse", "Hadejia", "Kazaure", "Gumel", "Ringim", "Birnin Kudu", "Gwaram", "Kafin Hausa"
 ];
 
@@ -319,7 +319,7 @@ const Onboarding = ({ onComplete }) => {
                                 className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 outline-none"
                              >
                                  <option value="">{t('select_lga')}...</option>
-                                 {JIGAWA_LGAS.map(l => <option key={l} value={l}>{l}</option>)}
+                                 {KOGI_LGAS.map(l => <option key={l} value={l}>{l}</option>)}
                              </select>
                          </div>
                      </div>
@@ -418,7 +418,7 @@ const Onboarding = ({ onComplete }) => {
                      {!isScanning && (
                          <div className="w-full p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-left">
                              <div className="flex justify-between items-center mb-2">
-                                 <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">{t('jamis_id_generated')}</span>
+                                 <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">{t('kamis_id_generated')}</span>
                                  <span className="text-[10px] bg-white px-2 py-1 rounded text-emerald-600 shadow-sm">{t('verified')}</span>
                              </div>
                              <p className="font-mono text-lg text-emerald-900 font-bold">JM-2026-{Math.floor(Math.random() * 9000) + 1000}</p>
@@ -716,7 +716,7 @@ const DigitalID = ({ user, addToast, openModal }) => {
                 <QrCode className="w-full h-full text-slate-900" />
             </div>
             <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-1">JAMIS-INPUT-2024-X88</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-1">KAMIS-INPUT-2024-X88</h3>
                 <p className="text-sm text-slate-500">Scan this code at the collection center</p>
             </div>
             <div className="text-left text-sm space-y-2 pt-2 border-t border-slate-200">
@@ -744,7 +744,7 @@ const DigitalID = ({ user, addToast, openModal }) => {
                     <div className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
                         <Leaf className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
                     </div>
-                    <span className="font-bold tracking-wider text-xs sm:text-sm lg:text-base">JAMIS ID</span>
+                    <span className="font-bold tracking-wider text-xs sm:text-sm lg:text-base">KAMIS ID</span>
                 </div>
                 <div className="px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 bg-white/20 backdrop-blur rounded text-[8px] sm:text-[10px] lg:text-xs font-mono">{t('verified') || 'VERIFIED'}</div>
             </div>
@@ -1200,7 +1200,7 @@ const App = () => {
       return <Onboarding onComplete={(data) => {
           setUserProfile(data);
           setHasOnboarded(true);
-          addToast(t('welcome_message') || "Welcome to JAMIS Farmer Portal!", "success");
+          addToast(t('welcome_message') || "Welcome to KAMIS Farmer Portal!", "success");
       }} addToast={addToast} />;
   }
 
@@ -1330,8 +1330,8 @@ const App = () => {
                             </button>
                             
                             <div className="text-center pb-8 pt-4">
-                                <p className="text-xs text-slate-400">JAMIS App v1.0.2</p>
-                                <p className="text-[10px] text-slate-300 mt-1">Jigawa State Government</p>
+                                <p className="text-xs text-slate-400">KAMIS App v1.0.2</p>
+                                <p className="text-[10px] text-slate-300 mt-1">Kogi State Government</p>
                             </div>
                         </div>
                     )}
@@ -1361,7 +1361,7 @@ const App = () => {
          className="fixed bottom-24 right-4 sm:right-6 lg:bottom-8 lg:right-8 z-40 px-5 h-12 sm:h-14 bg-emerald-600 rounded-full shadow-xl shadow-emerald-500/40 flex items-center gap-2 border-4 border-white hover:bg-emerald-700 transition-colors"
       >
           <Sparkles className="w-5 h-5 text-white" />
-          <span className="font-bold text-white text-sm sm:text-base">JAMIS AI</span>
+          <span className="font-bold text-white text-sm sm:text-base">KAMIS AI</span>
           <span className="absolute -top-1 -right-1 flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>

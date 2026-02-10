@@ -138,7 +138,7 @@ const getMockData = (t) => ({
   ],
 });
 
-const JIGAWA_LGAS = [
+const KOGI_LGAS = [
   "Auyo", "Babura", "Biriniwa", "Birnin Kudu", "Buji", "Dutse", 
   "Gagarawa", "Garki", "Gumel", "Guri", "Gwaram", "Gwiwa", 
   "Hadejia", "Jahun", "Kafin Hausa", "Kaugama", "Kazaure", 
@@ -258,7 +258,7 @@ const StatCard = ({ label, value, trend, trendUp, icon: Icon, color }) => (
 
 const WarRoomMap = ({ activeLayer }) => {
   const { t } = useTranslation();
-  const center = [12.1800, 9.5300]; // Jigawa center approx
+  const center = [12.1800, 9.5300]; // Kogi center approx
 
   // Mock data points
   const zones = [
@@ -363,7 +363,7 @@ export default function App() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [localMessages, setLocalMessages] = useState([
-    { id: 1, sender: 'bot', text: t('jamis_ai_intro') },
+    { id: 1, sender: 'bot', text: t('kamis_ai_intro') },
   ]);
   const [selectedFarmerId, setSelectedFarmerId] = useState(null);
 
@@ -408,17 +408,17 @@ export default function App() {
         const lowerInput = chatInput.toLowerCase();
         
         if (lowerInput.includes('weather') || lowerInput.includes('rain') || lowerInput.includes('climate')) {
-             responseText = "Jigawa Climate Watch: Current conditions are optimal for drying. Slight chance of scattered rain in Southern Zones (Birnin Kudu) within 72 hours. Wind speeds: 12km/h NE.";
+             responseText = "Kogi Climate Watch: Current conditions are optimal for drying. Slight chance of scattered rain in Southern Zones (Birnin Kudu) within 72 hours. Wind speeds: 12km/h NE.";
         } else if (lowerInput.includes('yield') || lowerInput.includes('production') || lowerInput.includes('harvest')) {
              responseText = "Yield Analysis: Rice production in Hadejia-Nguru wetlands is up 15% YoY. Total estimated harvest: 14,230 MT. Sorghum yields in Gumel are stable.";
         } else if (lowerInput.includes('farmer') || lowerInput.includes('register') || lowerInput.includes('people')) {
              responseText = "Registry Update: 1,402 Active farmers. 12 Flagged profiles require verification. Recent enrollments picked up in Dutse LGA (+45 this week).";
         } else if (lowerInput.includes('price') || lowerInput.includes('market') || lowerInput.includes('cost')) {
-             responseText = "Market Intelligence: Maize prices in Jigawa are currently 8% lower than the National Average, suggesting a surplus. Recommendation: Consider warehouse storage to await price correction.";
+             responseText = "Market Intelligence: Maize prices in Kogi are currently 8% lower than the National Average, suggesting a surplus. Recommendation: Consider warehouse storage to await price correction.";
         } else if (lowerInput.includes('pest') || lowerInput.includes('disease') || lowerInput.includes('health')) {
              responseText = "Health Alert: Minor reports of Stem Borer in Zone B. Field officers have been notified. Recommended action: 15% increase in pesticide distribution to affected wards.";
         } else {
-             responseText = "I can access the JAMIS database. Try asking about 'weather forecasts', 'crop yields', 'market prices', 'farmer stats', or 'pest alerts'.";
+             responseText = "I can access the KAMIS database. Try asking about 'weather forecasts', 'crop yields', 'market prices', 'farmer stats', or 'pest alerts'.";
         }
 
         setLocalMessages(prev => [...prev, {
@@ -472,7 +472,7 @@ export default function App() {
         setFormData(prev => ({...prev, coordinates: "Locating..."}));
         // Simulation
         setTimeout(() => {
-           // Randomize slightly around Jigawa center (approx 12N 9E)
+           // Randomize slightly around Kogi center (approx 12N 9E)
            const lat = (11.5 + Math.random() * 1.5).toFixed(4);
            const lng = (9.0 + Math.random() * 1.5).toFixed(4);
            setFormData(prev => ({...prev, coordinates: `${lat}° N, ${lng}° E`}));
@@ -537,7 +537,7 @@ export default function App() {
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                             >
                                 <option value="">{t('select_lga')}</option>
-                                {JIGAWA_LGAS.map(lga => (
+                                {KOGI_LGAS.map(lga => (
                                     <option key={lga} value={lga}>{lga}</option>
                                 ))}
                             </select>
@@ -691,7 +691,7 @@ export default function App() {
                (filterPerf === 'All' || f.performance === filterPerf);
     });
 
-    const uniqueLgas = ['All', ...JIGAWA_LGAS];
+    const uniqueLgas = ['All', ...KOGI_LGAS];
     const uniqueCrops = ['All', ...new Set(farmers.map(f => f.crop))];
     const uniquePerf = ['All', 'High', 'Average', 'Low'];
 
@@ -805,7 +805,7 @@ export default function App() {
                         <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
                             <Leaf className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-bold tracking-wider">{t('jamis_id')}</span>
+                        <span className="font-bold tracking-wider">{t('kamis_id')}</span>
                     </div>
                     <div className="px-2 py-1 bg-white/20 backdrop-blur rounded text-xs font-mono">{t('verified')}</div>
                 </div>
@@ -922,7 +922,7 @@ export default function App() {
       case 'dashboard':
         return (
           <div className="space-y-6">
-            {/* JAMIS Mission Statement */}
+            {/* KAMIS Mission Statement */}
             <div className="bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-100 rounded-xl p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
                     <Leaf className="w-5 h-5 text-emerald-600" />
@@ -1023,17 +1023,17 @@ export default function App() {
                     <div className="flex justify-between items-center mb-4">
                         <div>
                          <h2 className="text-xl font-bold text-slate-800">Market Price Radar</h2>
-                         <p className="text-slate-500 text-sm">Comparing local Jigawa markets vs National Index</p>
+                         <p className="text-slate-500 text-sm">Comparing local Kogi markets vs National Index</p>
                         </div>
                         <div className="flex gap-2">
-                             <div className="flex items-center gap-2 text-sm text-slate-500"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> Jigawa</div>
+                             <div className="flex items-center gap-2 text-sm text-slate-500"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> Kogi</div>
                              <div className="flex items-center gap-2 text-sm text-slate-500"><div className="w-3 h-3 rounded-full bg-sky-500"></div> National</div>
                         </div>
                     </div>
                     <div className="bg-sky-50 border border-sky-100 rounded-lg p-3 mb-4">
                         <p className="text-sm text-sky-800 flex items-start gap-2">
                             <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-sky-200 text-sky-700 text-[10px] shrink-0 mt-0.5">?</span>
-                            <span><strong>What this means:</strong> When Jigawa prices are higher than National, farmers may get better returns locally. When lower, planners may consider storage or export options.</span>
+                            <span><strong>What this means:</strong> When Kogi prices are higher than National, farmers may get better returns locally. When lower, planners may consider storage or export options.</span>
                         </p>
                     </div>
                     <p className="text-[10px] text-slate-400 italic mb-2">For guidance only. Final decision by field officers.</p>
@@ -1044,7 +1044,7 @@ export default function App() {
                             <PolarGrid stroke="#e2e8f0" />
                             <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
                             <PolarRadiusAxis angle={30} domain={[0, 150]} stroke="#cbd5e1" />
-                            <Radar name="Jigawa" dataKey="A" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.3} />
+                            <Radar name="Kogi" dataKey="A" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.3} />
                             <Radar name="National" dataKey="B" stroke="#0ea5e9" strokeWidth={2} fill="#0ea5e9" fillOpacity={0.3} />
                             <ReTooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px' }} itemStyle={{ color: '#1e293b' }} />
                             <Legend />
@@ -1577,7 +1577,7 @@ export default function App() {
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-1">{t('lga_assignment')}</label>
                                         <select name="lga" className="block w-full rounded-lg border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 px-3 py-2 border bg-slate-50 outline-none">
-                                            {JIGAWA_LGAS.map(l => <option key={l} value={l}>{l}</option>)}
+                                            {KOGI_LGAS.map(l => <option key={l} value={l}>{l}</option>)}
                                         </select>
                                     </div>
                                     <button type="submit" className="w-full bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-lg shadow-emerald-500/20">{t('add_new_officer')}</button>
@@ -1718,7 +1718,7 @@ export default function App() {
                                     className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600"
                                 >
                                     <option value="All">{t('filter_lga')}</option>
-                                    {JIGAWA_LGAS.map(lga => <option key={lga} value={lga}>{lga}</option>)}
+                                    {KOGI_LGAS.map(lga => <option key={lga} value={lga}>{lga}</option>)}
                                 </select>
                                 <button onClick={() => addToast("Report Downloading...", "success")} className="text-sm text-emerald-600 font-medium hover:underline flex items-center gap-1 px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100">
                                     {t('download_report')} <ArrowLeft className="w-3 h-3 rotate-180" />
@@ -2018,7 +2018,7 @@ export default function App() {
            </div>
         </div>
 
-        {/* JAMIS AI Bubble - Full screen on mobile, panel on desktop */}
+        {/* KAMIS AI Bubble - Full screen on mobile, panel on desktop */}
         <AnimatePresence>
             {chatOpen && (
                 <motion.div 
@@ -2030,7 +2030,7 @@ export default function App() {
                     <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-emerald-50">
                         <div className="flex items-center gap-2">
                             <BrainCircuit className="w-5 h-5 text-emerald-600" />
-                            <h3 className="font-semibold text-slate-800">{t('jamis_ai')}</h3>
+                            <h3 className="font-semibold text-slate-800">{t('kamis_ai')}</h3>
                         </div>
                         <button onClick={() => setChatOpen(false)} className="p-2 hover:bg-emerald-100 rounded-lg text-slate-400 hover:text-slate-700 transition-colors"><X className="w-5 h-5"/></button>
                     </div>
@@ -2067,7 +2067,7 @@ export default function App() {
             className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 px-5 h-12 lg:h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg shadow-emerald-500/30 z-40 transition-transform hover:scale-105 flex items-center gap-2"
         >   
             <MessageSquare className="w-5 h-5 lg:w-6 lg:h-6" /> 
-            <span className="font-bold text-sm sm:text-base">{t('jamis_ai')}</span>
+            <span className="font-bold text-sm sm:text-base">{t('kamis_ai')}</span>
         </button>
 
         {/* Mobile Bottom Navigation */}
